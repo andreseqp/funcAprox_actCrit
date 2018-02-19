@@ -40,13 +40,13 @@ public:
 	double valueClient(int clientid, int &countFeat);															// calculates value contribution of 1 client
 	void DPupdate(double &probRes, double &probVis, double &VisProbLeav, double &ResProbLeav, double &biasRV);					// change estimated value according to current reward and estimates of future state-action pair
 	int mapOptions(client cleanOptions[], int choice);															// map the option to the DP backup
+	void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &negativeRew, double &inbr, double &outbr, bool &experiment)
 	client cleanOptionsT[2];																					// current cleaning options time = t
 	client cleanOptionsT1[2];																					// future cleaning options  time = t+1																											
 	// virtual functions
 	virtual double value() = 0;																					// Calculates the value estimation for the current option/options
 	virtual void choice(int &StaAct1, int &StaAct2) = 0;
 	virtual void updateDerived() = 0;
-	virtual void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)=0;
 	int numEst;																									// Number of estimates characterizing bhavioural options
 	//void (agent::*pointGNO)(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward) = NULL;                // C++
 protected:
@@ -139,37 +139,93 @@ void agent::ObtainReward()
 	cumulReward += cleanOptionsT[choiceT].reward;
 }
 
-void agent::getExternalOptions(client newOptions[], int &idNewOptions, double &biasRV)
+void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &negativeRew, double &inbr, double &outbr, bool &experiment)
 {
-	if (rnd::uniform() < biasRV)
+	if (choiceT == 0)																				// Define the behaviour of the unattended client
 	{
-		if (cleanOptionsT1[0].mytype == absence)																			// complete the new state with either 1 or two new clients coming from the environment
+		if (cleanOptionsT[1].mytype == resident)
 		{
-			cleanOptionsT1[0].rebirth(resident, residMeans, residSds, mins, residProbs,ResReward);
-			cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs,VisReward);
+			if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }									// if the unttended client is a resident, it leaves with probability ResPropLeave
+			else { negReward = negativeRew; }
 		}
-		else if (cleanOptionsT1[0].mytype == resident)
+		else if (cleanOptionsT[1].mytype == visitor)
 		{
-			cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs,VisReward);
+			if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }								// if the unttended client is a visitor, it leaves with probability VisPropLeave
+			else { negReward = negativeRew; }
 		}
-		else
-		{
-			cleanOptionsT1[1].rebirth(resident, residMeans, residSds, mins, residProbs,ResReward);
-		}
+		else { negReward = 0; }
 	}
 	else
 	{
-		if (cleanOptionsT1[0].mytype == absence)																			// complete the new state with either 1 or two new clients coming from the environment
+		if (cleanOptionsT[0].mytype == resident)
 		{
-			cleanOptionsT1[0] = newOptions[idNewOptions], ++idNewOptions;
-			cleanOptionsT1[1] = newOptions[idNewOptions], ++idNewOptions;
+			if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a resident, it leaves with probability ResPropLeave
+			else { negReward = negativeRew; }
 		}
-		else { cleanOptionsT1[1] = newOptions[idNewOptions], ++idNewOptions; }
+		else if (cleanOptionsT[0].mytype == visitor)
+		{
+			if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a visitor, it leaves with probability VisPropLeave
+			else { negReward = negativeRew; }
+		}
+		else { negReward = 0; }
+	}
+	if (experiment) { getExperimentalOptions(); }
+	else { getExternalOptions(newOptions, idNewOptions, inbr, outbr); }
+}
+
+void agent::getExternalOptions(client newOptions[], int &idNewOptions, double &inbr, double &outbr)
+{
+	if (cleanOptionsT1[0].mytype == absence)																					// If none of the clients stayed from the previous interaction
+	{
+		cleanOptionsT1[0] = newOptions[idNewOptions], ++idNewOptions;
+		if (cleanOptionsT1[0].mytype == absence)																				// If the first draw does not yield a client
+		{
+			cleanOptionsT1[1] = newOptions[idNewOptions], ++idNewOptions;
+			return;
+		}
+	}
+	if (cleanOptionsT1[0].mytype != absence)																					// Fill the second option depending on the first option
+	{
+		double probs[3] = { (1 - inbr)*(1 - outbr) + inbr*outbr , 0, 0 };												// Define probabilities depending on parameters
+		probs[1] = probs[0] + inbr*(1 - outbr);																			// First prob is of a random option	
+		probs[2] = probs[1] + outbr*(1 - inbr);																			// Second and third homophily, and heterophily respectively
+		if (probs[2] != 1) error("agent:getExternalOptions", "probability does not sum up to 1");
+		double rand = rnd::uniform();
+		if (probs[0] > rand) { cleanOptionsT1[1] = newOptions[idNewOptions], ++idNewOptions; }						// Random
+		else if (probs[1] > rand)
+		{
+			if (cleanOptionsT1[1].mytype == resident)
+			{
+				cleanOptionsT1[1].rebirth(resident, residMeans, residSds, mins, residProbs, ResReward); 			// homophily
+			}
+			else
+			{
+				cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs, VisReward);
+			}				
+		}
+		else																										// heterophily
+		{
+			if (cleanOptionsT1[0] == resident) 
+			{ 
+				cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs, VisReward);
+			}
+			else { cleanOptionsT1[1].rebirth(resident, residMeans, residSds, mins, residProbs, ResReward); }
+		}
 	}
 }
 
+void agent::getExperimentalOptions()																					// Get new options in an experimental setting
+{
+	if (cleanOptionsT[0].mytype == resident && cleanOptionsT[1].mytype == visitor) { return; }										// Every other option is a Resident-Visitor
+	else
+	{
+		cleanOptionsT1[0].rebirth(resident, residMeans,residSds,mins,residProbs,ResReward);
+		cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs, VisReward);
+		return;
+	}
+}
 
-void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew)// taking action, obatining reward, seeing new state, choosing future action
+void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &VisReward, double &ResReward, double &inbr, double &outbr, double &negativeRew, bool &experiment)// taking action, obatining reward, seeing new state, choosing future action
 {
 	int StaAct1, StaAct2;
 	++age;																										// new time step
@@ -177,11 +233,11 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, dou
 	choiceT = choiceT1;																							// Future action becomes current action
 	valuesT[0] = valuesT1[0], valuesT[1] = valuesT1[1];
 	checkChoice();																								// Check that the choice is among the options
-	cleanOptionsT1[0].rebirth(absence, residMeans, residSds, mins, residProbs,biasRV);
-	cleanOptionsT1[1].rebirth(absence, residMeans, residSds, mins, residProbs,biasRV);							// Future state is unknown
+	cleanOptionsT1[0].rebirth(absence, residMeans, residSds, mins, residProbs, 0);
+	cleanOptionsT1[1].rebirth(absence, residMeans, residSds, mins, residProbs, 0);							// Future state is unknown
 	choiceT1 = 2;
 	ObtainReward();
-	getNewOptions(newOptions, idNewOptions, VisProbLeav, ResProbLeav, biasRV, negativeRew);
+	getNewOptions(newOptions, idNewOptions, VisProbLeav, ResProbLeav, negativeRew, inbr, outbr, experiment);
 	choiceT1 = 0;																								// Look into the value of state action pair if option 1 is chosen
 	valuesT1[0] = value();
 	//StaAct1 = mapOptions(cleanOptionsT1, choiceT1);
@@ -208,18 +264,18 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, dou
 	}
 	featWeights[22] += alpha*(reward + gamma*valuesT1[choiceT1] - valuesT[choiceT])*choiceT;	
 }*/
-void agent::updateClient(double &reward, int &countWeights, int clientId)																				// change estimated value according to current reward and estimates of future state-action pair
+void agent::updateClient(int &countWeights, int clientId)																				// change estimated value according to current reward and estimates of future state-action pair
 {
 	for (size_t i = 0; i < cleanOptionsT[clientId].numFeat[0] + cleanOptionsT[clientId].numFeat[1]; i++)
 	{
 		if (i<cleanOptionsT[clientId].numFeat[0])
 		{
-			featWeights[countWeights] += alpha*(reward + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featQuant[i];
+			featWeights[countWeights] += alpha*(currentReward*(1-neta) + negReward*neta + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featQuant[i];
 			++countWeights;
 		}
 		else
 		{
-			featWeights[countWeights] += boolExtUpdate*alpha*(reward + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
+			featWeights[countWeights] += boolExtUpdate*alpha*(currentReward*(1 - neta) + negReward*neta + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
 			++countWeights;
 		}
 
@@ -252,6 +308,20 @@ void agent::printIndData(ofstream &learnSeries, int &seed,double &bias)
 		//cout << values[j] << '\t';
 	}
 	learnSeries << endl;
+	//cout << endl;
+}
+
+void agent::printDPData(ofstream &DPdata, double &outbr, int &time)								// Print the outcome of the DP estimation
+{
+	DPdata << time << '\t';
+	DPdata << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
+	DPdata << outbr << '\t';
+	for (size_t j = 0; j < 9; j++)
+	{
+		DPdata << DPbackup[j] << '\t';
+		//cout << values[j] << '\t';
+	}
+	DPdata << endl;
 	//cout << endl;
 }
 
@@ -307,52 +377,126 @@ int agent::mapOptions(client cleanOptions[], int choice)
 	else { stateAction = 6; }						   // State = VV , action = V
 	return stateAction;
 }
-void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, double &ResProbLeav, double &biasRV)																								// change estimated value according to current reward and estimates of future state-action pair
+void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, double &ResProbLeav, double &outbr, double &ResReward, double &VisReward, double &negativeRew, ofstream &DPdata, bool &experiment)
+// Expected value according to DP algorithm
 {
-	double transProb[9];
-	DPid = mapOptions(cleanOptionsT, choiceT);
-	if (DPid == 0 || DPid == 5 || DPid == 7)
+	double transProb[9] = { 0,0,0,0,0,0,0,0,0 };																		// Transition probabilities
+	double sum;
+	double rewards[9] = { VisReward*(1 - neta) + neta*ResProbLeav*negativeRew,			//0
+		ResReward*(1 - neta) + neta*VisProbLeav*negativeRew,							//1
+		VisReward*(1 - neta),															//2
+		neta*VisProbLeav*negativeRew,													//3
+		ResReward*(1 - neta),											                //4
+		neta*ResProbLeav*negativeRew,								                    //5
+		VisReward*(1 - neta) + neta*VisProbLeav*negativeRew,		                    //6
+		ResReward*(1 - neta) + neta*ResProbLeav*negativeRew,		                    //7
+		0 };															                //8
+	if (experiment)															// In an experimental setting
 	{
-		transProb[0] = softMax(DPbackup[0], DPbackup[1])*(((1 - ResProbLeav)*probVis + ResProbLeav * 2 * probVis*probRes)*(1 - biasRV) + biasRV);
-		transProb[1] = softMax(DPbackup[1], DPbackup[0])*(((1 - ResProbLeav)*probVis + ResProbLeav * 2 * probVis*probRes)*(1 - biasRV) + biasRV);
-		transProb[2] = softMax(DPbackup[2], DPbackup[3])*ResProbLeav * 2 * probVis*(1 - probRes - probVis)*(1 - biasRV);
-		transProb[3] = softMax(DPbackup[3], DPbackup[2])*ResProbLeav * 2 * probVis*(1 - probRes - probVis)*(1 - biasRV);
-		transProb[4] = softMax(DPbackup[4], DPbackup[5])*((1 - ResProbLeav)*(1 - probRes - probVis) + ResProbLeav * 2 * (1 - probRes - probVis)*probRes)*(1 - biasRV);
-		transProb[5] = softMax(DPbackup[5], DPbackup[4])*((1 - ResProbLeav)*(1 - probRes - probVis) + ResProbLeav * 2 * (1 - probRes - probVis)*probRes)*(1 - biasRV);
-		transProb[6] = ResProbLeav*pow(probVis, 2)*(1 - biasRV);
-		transProb[7] = ((1 - ResProbLeav)*probRes + ResProbLeav*pow(probRes, 2))*(1 - biasRV);
-		transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2)*(1 - biasRV);
+		for (int k = 0; k < 1000; k++)
+		{
+			for (size_t i = 0; i < 9; i++)
+			{
+				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
+				if (DPid == 0)
+				{
+					transProb[0] = 0;
+					transProb[1] = 0;
+					transProb[2] = 0;
+					transProb[3] = 0;
+					transProb[4] = softMax(DPbackup[4], DPbackup[5])*(1 - ResProbLeav);
+					transProb[5] = softMax(DPbackup[5], DPbackup[4])*(1 - ResProbLeav);
+					transProb[6] = 0;
+					transProb[7] = 0;
+					transProb[8] = ResProbLeav;
+				}
+				else if (DPid == 1)
+				{
+					transProb[0] = 0;
+					transProb[1] = 0;
+					transProb[2] = softMax(DPbackup[2], DPbackup[3])*(1 - VisProbLeav);
+					transProb[3] = softMax(DPbackup[3], DPbackup[2])*(1 - VisProbLeav);
+					transProb[4] = 0;
+					transProb[5] = 0;
+					transProb[6] = 0;
+					transProb[7] = 0;
+					transProb[8] = VisProbLeav;
+				}
+				else
+				{
+					transProb[0] = softMax(DPbackup[0], DPbackup[1]);
+					transProb[1] = softMax(DPbackup[1], DPbackup[0]);
+					transProb[2] = 0;
+					transProb[3] = 0;
+					transProb[4] = 0;
+					transProb[5] = 0;
+					transProb[6] = 0;
+					transProb[7] = 0;
+					transProb[8] = 0;
+				}
+				sum = 0;
+				for (int j = 0; j < 9; j++)
+				{
+					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
+				}
+				DPbackup[DPid] = sum;
+			}
+			printDPData(DPdata, outbr, k);
+		}
 	}
-	else if (DPid == 1 || DPid == 3 || DPid == 6)
+	else																						// In a natural setting
 	{
-		transProb[0] = softMax(DPbackup[0], DPbackup[1])*(((1 - VisProbLeav)*probRes + VisProbLeav * 2 * probVis*probRes)*(1 - biasRV) + biasRV);
-		transProb[1] = softMax(DPbackup[1], DPbackup[0])*(((1 - VisProbLeav)*probRes + VisProbLeav * 2 * probVis*probRes)*(1 - biasRV) + biasRV);
-		transProb[2] = softMax(DPbackup[2], DPbackup[3])*((1 - VisProbLeav)*(1 - probRes - probVis) + VisProbLeav * 2 * probVis*(1 - probRes - probVis))*(1 - biasRV);
-		transProb[3] = softMax(DPbackup[3], DPbackup[2])*((1 - VisProbLeav)*(1 - probRes - probVis) + VisProbLeav * 2 * probVis*(1 - probRes - probVis))*(1 - biasRV);
-		transProb[4] = softMax(DPbackup[4], DPbackup[5])* VisProbLeav * 2 * (1 - probRes - probVis)*probRes*(1 - biasRV);
-		transProb[5] = softMax(DPbackup[5], DPbackup[4])* VisProbLeav * 2 * (1 - probRes - probVis)*probRes*(1 - biasRV);
-		transProb[6] = ((1 - VisProbLeav)*probVis + VisProbLeav*pow(probVis, 2))*(1 - biasRV);
-		transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - biasRV);
-		transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2)*(1 - biasRV);
+		for (int k = 0; k < 1000; k++)
+		{
+			for (size_t i = 0; i < 9; i++)
+			{
+				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
+				if (DPid == 0 || DPid == 5 || DPid == 7)
+				{
+					transProb[0] = softMax(DPbackup[0], DPbackup[1])*((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + ResProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
+					transProb[1] = softMax(DPbackup[1], DPbackup[0])*((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + ResProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
+					transProb[2] = softMax(DPbackup[2], DPbackup[3])*ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
+					transProb[3] = softMax(DPbackup[3], DPbackup[2])*ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
+					transProb[4] = softMax(DPbackup[4], DPbackup[5])*((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) + ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
+					transProb[5] = softMax(DPbackup[5], DPbackup[4])*((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) + ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
+					transProb[6] = ResProbLeav*pow(probVis, 2)*(1 - outbr);
+					transProb[7] = ((1 - ResProbLeav)*probRes + ResProbLeav*pow(probRes, 2))*(1 - outbr);
+					transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2);
+				}
+				else if (DPid == 1 || DPid == 3 || DPid == 6)
+				{
+					transProb[0] = softMax(DPbackup[0], DPbackup[1])*((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + VisProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
+					transProb[1] = softMax(DPbackup[1], DPbackup[0])*((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + VisProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
+					transProb[2] = softMax(DPbackup[2], DPbackup[3])*((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) + VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
+					transProb[3] = softMax(DPbackup[3], DPbackup[2])*((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) + VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
+					transProb[4] = softMax(DPbackup[4], DPbackup[5])*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
+					transProb[5] = softMax(DPbackup[5], DPbackup[4])*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
+					transProb[6] = ((1 - VisProbLeav)*probVis + VisProbLeav*pow(probVis, 2))*(1 - outbr);
+					transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - outbr);
+					transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2);
+				}
+				else
+				{
+					transProb[0] = softMax(DPbackup[0], DPbackup[1]) * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes));
+					transProb[1] = softMax(DPbackup[1], DPbackup[0]) * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes));
+					transProb[2] = softMax(DPbackup[2], DPbackup[3]) * probVis*(1 - probRes - probVis)*(2 - outbr);
+					transProb[3] = softMax(DPbackup[3], DPbackup[2]) * probVis*(1 - probRes - probVis)*(2 - outbr);
+					transProb[4] = softMax(DPbackup[4], DPbackup[5]) * (1 - probRes - probVis) * probRes*(2 - outbr);
+					transProb[5] = softMax(DPbackup[5], DPbackup[4]) * (1 - probRes - probVis) * probRes*(2 - outbr);
+					transProb[6] = pow(probVis, 2)*(1 - outbr);
+					transProb[7] = pow(probRes, 2)*(1 - outbr);
+					transProb[8] = pow((1 - probRes - probVis), 2);
+				}
+				sum = 0;
+				for (int j = 0; j < 9; j++)
+				{
+					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
+				}
+				DPbackup[DPid] = sum;
+			}
+			printDPData(DPdata, outbr, k);
+		}
 	}
-	else
-	{
-		transProb[0] = softMax(DPbackup[0], DPbackup[1]) * (2 * probVis*probRes*(1 - biasRV) + biasRV);
-		transProb[1] = softMax(DPbackup[1], DPbackup[0]) * (2 * probVis*probRes*(1 - biasRV) + biasRV);
-		transProb[2] = softMax(DPbackup[2], DPbackup[3]) * 2 * probVis*(1 - probRes - probVis)*(1 - biasRV);
-		transProb[3] = softMax(DPbackup[3], DPbackup[2]) * 2 * probVis*(1 - probRes - probVis)*(1 - biasRV);
-		transProb[4] = softMax(DPbackup[4], DPbackup[5]) * 2 * (1 - probRes - probVis)*probRes*(1 - biasRV);
-		transProb[5] = softMax(DPbackup[5], DPbackup[4]) * 2 * (1 - probRes - probVis)*probRes*(1 - biasRV);
-		transProb[6] = pow(probVis, 2)*(1 - biasRV);
-		transProb[7] = pow(probRes, 2)*(1 - biasRV);
-		transProb[8] = pow((1 - probRes - probVis), 2)*(1 - biasRV);
-	}
-	DPbackup[DPid] = 0;
-	for (int i = 0; i < 9; i++)
-	{
-		DPbackup[DPid] += transProb[i] * (currentReward + getLearnPar(gammaPar)*DPbackup[i]);
-	}
-
 }
 
 class StatPosTyp1
@@ -393,32 +537,6 @@ public:
 		client0 = valueClient(0, countFeat);
 		client1 = valueClient(1, countFeat);
 		return(client0 + client1);
-	}
-	virtual void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)
-	{
-		if (choiceT == 0)																							// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-			else if (cleanOptionsT[1].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-		}
-		else if (choiceT == 1)
-		{
-			if (cleanOptionsT[0].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-			else if (cleanOptionsT[0].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
 	}
 };
 
@@ -461,32 +579,6 @@ public:
 		client0 = valueClient(0, countFeat);
 		client1 = valueClient(1, countFeat);
 		return(client0 + client1);
-	}
-	virtual void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)
-	{
-		if (choiceT == 0)																							// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-			else if (cleanOptionsT[1].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-		}
-		else if (choiceT == 1)
-		{
-			if (cleanOptionsT[0].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-			else if (cleanOptionsT[0].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
 	}
 };
 
@@ -540,32 +632,6 @@ public:
 		client1 = valueClient(1, countFeat);
 		return(client0 + client1);
 	}
-	virtual void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)
-	{
-		if (choiceT == 0)																							// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-			else if (cleanOptionsT[1].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-		}
-		else if (choiceT == 1)
-		{
-			if (cleanOptionsT[0].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-			else if (cleanOptionsT[0].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
-	}
 };
 
 class StatNegTyp1 :public agent
@@ -583,38 +649,6 @@ public:
 			choiceT1 = 0;
 		}
 		else { choiceT1 = 1; }
-	}
-	virtual void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew)
-	{
-		if (choiceT == 0)																			// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }									// if the unttended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[1].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }								// if the unttended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		else
-		{
-			if (cleanOptionsT[0].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[0].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }	// if the unattended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
 	}
 	virtual void updateDerived()
 	{
@@ -668,39 +702,6 @@ public:
 			choiceT1 = 0;
 		}
 	}
-	virtual void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew)
-	{
-		if (choiceT == 0)																			// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }									// if the unttended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[1].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }	// if the unttended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		else
-		{
-			if (cleanOptionsT[0].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { 
-					cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[0].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }	// if the unattended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
-	}
 	virtual void updateDerived()
 	{
 		int countWeights = 0;
@@ -752,32 +753,6 @@ public:
 		int countWeights = 0;
 		updateClient(currentReward, countWeights, choiceT);
 	}
-	virtual void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)
-	{
-		if (choiceT == 0)																							// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-			else if (cleanOptionsT[1].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-		}
-		else if (choiceT == 1)
-		{
-			if (cleanOptionsT[0].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-			else if (cleanOptionsT[0].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
-	}
 };
 
 class ActPosTy2 :public agent
@@ -817,32 +792,6 @@ public:
 		int countFeat = 0;
 		return(valueClient(choiceT1,countFeat));
 	}
-	virtual void agent::getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward)
-	{
-		if (choiceT == 0)																							// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-			else if (cleanOptionsT[1].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[1];
-			}
-		}
-		else if (choiceT == 1)
-		{
-			if (cleanOptionsT[0].mytype == resident && rnd::uniform() > ResProbLeav)								// if the unttended client is a resident, it leaves with probability ResPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-			else if (cleanOptionsT[0].mytype == visitor && rnd::uniform() > VisProbLeav)							// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			{
-				cleanOptionsT1[0] = cleanOptionsT[0];
-			}
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
-	}
 };
 
 class ActNegTy1 :public agent
@@ -860,40 +809,6 @@ public:
 			choiceT1 = 0;
 		}
 		else { choiceT1 = 1; }
-	}
-	virtual void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew)
-	{
-		if (choiceT == 0)																			// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { 
-					cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }									// if the unttended client is a resident, it leaves with probability ResPropLeave
-				else { 	negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[1].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) 
-				{ cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }	// if the unttended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		else
-		{
-			if (cleanOptionsT[0].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[0].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }	// if the unattended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
 	}
 	virtual void updateDerived()
 	{
@@ -933,38 +848,6 @@ public:
 		{
 			choiceT1 = 0;
 		}
-	}
-	virtual void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew)
-	{
-		if (choiceT == 0)																			// Define the behaviour of the unattended client
-		{
-			if (cleanOptionsT[1].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; }									// if the unttended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[1].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0;}	// if the unttended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		else
-		{
-			if (cleanOptionsT[0].mytype == resident)
-			{
-				if (rnd::uniform() > ResProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }		// if the unattended client is a resident, it leaves with probability ResPropLeave
-				else { negReward = negativeRew; }
-			}
-			else if (cleanOptionsT[0].mytype == visitor)
-			{
-				if (rnd::uniform() > VisProbLeav) { cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }	// if the unattended client is a visitor, it leaves with probability VisPropLeave
-				else { negReward = negativeRew; }
-			}
-			else { negReward = 0; }
-		}
-		getExternalOptions(newOptions, idNewOptions, biasRV);
 	}
 	virtual void updateDerived()
 	{
