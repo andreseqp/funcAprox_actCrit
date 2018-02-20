@@ -175,10 +175,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	double ResProbLeav = 0;
 	double VisProbLeav = 1;
 	double negativeRew = -10;
-	double biasRange[3] = { 0, 0.1, 0.2 };
+	bool experiment = 0;
+	double inbr = 0.0;
+	double outbr = 0;
 	int const trainingRep = 15;//30
 	double alphaT = 0.000001;
-	const int numlearn = 8;
+	const int numlearn = 2;
 	int printGen = 10;
 
 	double gammaT;
@@ -188,6 +190,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	double tauT;
 
 	double tauRange[3] = { 1, 2, 5};
+	
+	double netaT;
+
+	double netaRange[1] = { 0.5 };
+
+	double outbr;
 
 
 	int seed = 12;
@@ -207,38 +215,34 @@ int _tmain(int argc, _TCHAR* argv[])
 			gammaT = gammaRange[k];
 			tauT = tauRange[0];
 			ofstream printTest;
+			ofstream DPprint;
 			
-			learners[0] = new StatPosTyp1(alphaT, gammaT, tauT);
-			learners[1] = new StatPosTyp2 (alphaT, gammaT, tauT); 
-			learners[2] = new StatNegTyp1(alphaT, gammaT, tauT);
-			learners[3] = new StatNegTyp2(alphaT, gammaT, tauT); 
-			learners[4] = new ActPosTy1(alphaT, gammaT, tauT);
-			learners[5] = new ActPosTy2(alphaT, gammaT, tauT);
-			learners[6] = new ActNegTy1(alphaT, gammaT, tauT);
-			learners[7] = new ActNegTy2(alphaT, gammaT, tauT);
+			learners[0] = new StatPosTyp1(alphaT, gammaT, tauT, netaT);
+			learners[4] = new ActPosTy1(alphaT, gammaT, tauT, netaT);
 			
 			//learners[0] = new StatPosTyp2(alphaT, gammaT, tauT);
 			
 			for (int k=0;k<1;++k)  //numlearn
 			{
-				initializeIndFile(printTest, *learners[k], seed, biasRange[l]);
+				initializeIndFile(printTest, *learners[k], seed, outbr);
 				for (int i = 0; i < trainingRep; i++)
 				{
 					draw(clientSet, totRounds, ResProb, VisProb);
 					idClientSet = 0;
 					for (size_t j = 0; j < totRounds; j++)
 					{
-						learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, biasRange[l], negativeRew);
+						learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, VisReward, ResReward,inbr,outbr, negativeRew,experiment);
 						learners[k]->updateDerived();
-						learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav,biasRange[l]);
 						if (j%printGen == 0)
 						{
-							learners[k]->printIndData(printTest, i, biasRange[l]);
+							learners[k]->printIndData(printTest, i, outbr);
 						}
 					}
 					learners[k]->rebirth();
 				}
 				printTest.close();
+				learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr, ResReward, VisReward,negativeRew, DPprint, experiment);
+				DPprint.close();
 				delete learners[k];
 			}
 			

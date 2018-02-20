@@ -18,14 +18,14 @@ class client
 		client();																									// default constructor constructs an absent client
 		client(client_ty type, double means[], double sds[], double mins[], double probs[], double &rew);				// contructor																													
 		~client();																									// destructor not really necessary
-		void printClientData(ofstream &learnSeries);														// prints data from the client into the learning trial
-		void rebirth(client_ty type, double means[], double sds[], double mins[], double probs[], double &rew);																								// Function to reset private variables in an individual
+		void printClientData(ofstream &learnSeries);																// prints data from the client into the learning trial
+		void rebirth(client_ty type, double means[], double sds[], double mins[], double probs[], double &rew);		// Function to reset private variables in an individual
 		client_ty mytype;																							// The type of the client
 		int numFeat[2];
 		double featQuant[8];
 		bool featBool[3];
 		double reward;																								// Amount of reward obtained by a cleaner if it were to clean the client
-		/*double heigth;																								// Heigth of the client
+		/*double heigth;																							// Heigth of the client
 		double length;																								// Length of the client
 		double mainRed;																								// Red intensity in the main colour of the client (RGB model)
 		double mainGreen;																							// Green intensity in the main colour of the client (RGB model)

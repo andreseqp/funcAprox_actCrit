@@ -5,7 +5,7 @@
 
 using namespace std;
 
-enum learPar { alphaPar, gammaPar, tauPar };
+enum learPar { alphaPar, gammaPar, tauPar, netaPar };
 
 // Global variables
 // Client's characteristics
@@ -25,22 +25,25 @@ class agent																										// Learning agent
 {
 public:
 	agent();																									// basic contructor
-	agent(double alphaI, double gammaI, double tauI);															// constructor providing values for the learning parameters
+	agent(double alphaI, double gammaI, double tauI, double netaI);															// constructor providing values for the learning parameters
 	virtual ~agent();																							// destructor not really necessary
-	void updateClient(double &reward, int &countWeights, int clientId);											// function that updates the value of state-action pairs accosrding to current reward and estimates of future values
-	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negativeRew);
+	void updateClient(int &countWeights, int clientId);											// function that updates the value of state-action pairs accosrding to current reward and estimates of future values
+	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &VisReward, double &ResReward, double &inbr, double &outbr, double &negativeRew, bool &experiment);
 	// function where the agent takes the action, gets reward, see new state and chooses future action
 	void printIndData(ofstream &learnSeries, int &seed, double &bias);											// prints individual data from the learning process
+	void printDPData(ofstream &DPdata, double &outbr, int &time);												// prints the data from the Dynamic Programming algorithm
 	double getLearnPar(learPar parameter);																		// function to access the learning parameters
 	void checkChoice();																							// Check that the choice taken is among one of the options, otherwise trigger an error
 	void rebirth();																								// Function to reset private variables in an individual
-	void getExternalOptions(client newOptions[], int &idNewOptions,double &RVbias);									// After unattended clinets leave or stay, get new clients
+	void getExternalOptions(client newOptions[], int &idNewOptions, double &inbr, double &outbr);	// After unattended clinets leave or stay, get new clients
 	void ObtainReward();															
 	double softMax(double &value1, double &value2);																// softmax function to take a desicion about the two actions
 	double valueClient(int clientid, int &countFeat);															// calculates value contribution of 1 client
-	void DPupdate(double &probRes, double &probVis, double &VisProbLeav, double &ResProbLeav, double &biasRV);					// change estimated value according to current reward and estimates of future state-action pair
+	void DPupdate(double &probRes, double &probVis, double &VisProbLeav, double &ResProbLeav, double &outbr, double &ResReward, double &VisReward, double &negativeRew, ofstream &DPdata, bool &experiment);
+																												// change estimated value according to current reward and estimates of future state-action pair
 	int mapOptions(client cleanOptions[], int choice);															// map the option to the DP backup
-	void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &negativeRew, double &inbr, double &outbr, bool &experiment)
+	void getNewOptions(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &negativeRew, double &inbr, double &outbr, bool &experiment);
+	void getExperimentalOptions();																				// function to 
 	client cleanOptionsT[2];																					// current cleaning options time = t
 	client cleanOptionsT1[2];																					// future cleaning options  time = t+1																											
 	// virtual functions
@@ -65,6 +68,7 @@ private:
 	double alpha;																								// speed of learning
 	double gamma;																								// importance of future rewards
 	double tau;																									// level of explorative behaviour. The higher, the less important values is when making decisions
+	double neta;
 };
 
 // Members of agent class
@@ -74,7 +78,7 @@ agent::agent()																									// basic constructor
 	numEst = 23;
 	client noClient = client();
 	for (size_t i = 0; i < numEst; i++) { featWeights[i] = 0; }
-	alpha = 0.01, gamma = 0.5, tau = 10;																		// Default values
+	alpha = 0.01, gamma = 0.5, tau = 10, neta = 0;																		// Default values
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;
 	valuesT[0] = 0, valuesT[1] = 0, valuesT1[0] = 0, valuesT1[1] = 0;
@@ -84,13 +88,13 @@ agent::agent()																									// basic constructor
 	for (size_t i = 0; i < 9; i++) { DPbackup[i] = 0; }
 }
 
-agent::agent(double alphaI, double gammaI, double tauI)															// parameterized constructor
+agent::agent(double alphaI, double gammaI, double tauI, double netaI)															// parameterized constructor
 {
 	numEst = 23;
 	client noClient = client();
 	for (size_t i = 0; i < numEst; i++) { featWeights[i] = 0; }
 	//values[4] = 10, values[2] = 10;
-	alpha = alphaI, gamma = gammaI, tau = tauI;
+	alpha = alphaI, gamma = gammaI, tau = tauI, neta = netaI;
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;  
 	valuesT[0] = 0, valuesT[1] = 0, valuesT1[0] = 0, valuesT1[1] = 0;
@@ -130,7 +134,8 @@ double agent::getLearnPar(learPar parameter)
 {
 	if (parameter == alphaPar) { return alpha; }
 	else if (parameter == gammaPar) { return gamma; }
-	else { return tau; }
+	else if (parameter == tauPar) { return tau; }
+	else { return neta; }
 }
 
 void agent::ObtainReward()
@@ -205,7 +210,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions, double &i
 		}
 		else																										// heterophily
 		{
-			if (cleanOptionsT1[0] == resident) 
+			if (cleanOptionsT1[0].mytype == resident) 
 			{ 
 				cleanOptionsT1[1].rebirth(visitor, visitMeans, visitSds, mins, visitProbs, VisReward);
 			}
@@ -225,7 +230,8 @@ void agent::getExperimentalOptions()																					// Get new options in a
 	}
 }
 
-void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &VisReward, double &ResReward, double &inbr, double &outbr, double &negativeRew, bool &experiment)// taking action, obatining reward, seeing new state, choosing future action
+void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &VisReward, double &ResReward, double &inbr, double &outbr, double &negativeRew, bool &experiment)
+// taking action, obatining reward, seeing new state, choosing future action
 {
 	int StaAct1, StaAct2;
 	++age;																										// new time step
@@ -233,8 +239,8 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, dou
 	choiceT = choiceT1;																							// Future action becomes current action
 	valuesT[0] = valuesT1[0], valuesT[1] = valuesT1[1];
 	checkChoice();																								// Check that the choice is among the options
-	cleanOptionsT1[0].rebirth(absence, residMeans, residSds, mins, residProbs, 0);
-	cleanOptionsT1[1].rebirth(absence, residMeans, residSds, mins, residProbs, 0);							// Future state is unknown
+	cleanOptionsT1[0].rebirth(absence, residMeans, residSds, mins, residProbs, outbr);
+	cleanOptionsT1[1].rebirth(absence, residMeans, residSds, mins, residProbs, outbr);							// Future state is unknown: only the first parameters matters for this function. 
 	choiceT1 = 2;
 	ObtainReward();
 	getNewOptions(newOptions, idNewOptions, VisProbLeav, ResProbLeav, negativeRew, inbr, outbr, experiment);
@@ -282,12 +288,12 @@ void agent::updateClient(int &countWeights, int clientId)																				// 
 	}
 }
 
-void agent::printIndData(ofstream &learnSeries, int &seed,double &bias)
+void agent::printIndData(ofstream &learnSeries, int &seed,double &outbr)
 {
 	learnSeries << seed << '\t' << age << '\t';
 	//cout << seed << '\t' << age << '\t';
-	learnSeries << alpha << '\t' << gamma << '\t' << tau << '\t';
-	learnSeries << bias << '\t';
+	learnSeries << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
+	learnSeries << outbr << '\t';
 	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
 	//cout << currentReward << '\t' << cumulReward << '\t';
 	learnSeries << valuesT[choiceT] << '\t';
@@ -499,12 +505,12 @@ void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, doub
 	}
 }
 
-class StatPosTyp1
+class StatPosTyp1																								// Agent that estimates state-action and uses value for every desicion
 	:public agent
 {
 public:
-	StatPosTyp1(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
+	StatPosTyp1(double alphaI, double gammaI, double tauI, double netaI)
+		:agent(alphaI, gammaI, tauI, netaI)
 		{
 			numEst = 44;
 		}
@@ -522,8 +528,8 @@ public:
 		{
 			countWeights = 22;
 		}
-		updateClient(currentReward, countWeights, 0);
-		updateClient(currentReward, countWeights, 1);
+		updateClient(countWeights, 0);
+		updateClient(countWeights, 1);
 	}
 	virtual double value()
 	{
@@ -540,53 +546,13 @@ public:
 	}
 };
 
-class StatPosTyp1Imp2
-	:public agent
-{
-public:
-	StatPosTyp1Imp2(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI) 
-	{
-		numEst = 44;
-	}
-	virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))
-		{
-			choiceT1 = 0;
-		}
-		else { choiceT1 = 1; }
-	}
-	virtual void updateDerived()
-	{
-		int countWeights = 0;
-		if (choiceT)
-		{
-			countWeights = 22;
-		}
-		updateClient(currentReward, countWeights, 0);
-		updateClient(currentReward, countWeights, 1);
-	}
-	virtual double value()
-	{
-		int countFeat = 0;
-		if (choiceT1)
-		{
-			countFeat = 22;
-		}
-		double client0 = 0;
-		double client1 = 0;
-		client0 = valueClient(0, countFeat);
-		client1 = valueClient(1, countFeat);
-		return(client0 + client1);
-	}
-};
 
-class StatPosTyp2 :public agent
+
+class StatPosTyp2 :public agent																					// Agents that estimates state-actions and only uses value to descriminate between clients
 {
 public:
-	StatPosTyp2(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
+	StatPosTyp2(double alphaI, double gammaI, double tauI, double netaI)
+		:agent(alphaI, gammaI, tauI,netaI)
 	{
 		numEst = 44;
 	}
@@ -616,8 +582,8 @@ public:
 		{
 			countWeights = 22;
 		}
-		updateClient(currentReward, countWeights, 0);
-		updateClient(currentReward, countWeights, 1);
+		updateClient(countWeights, 0);
+		updateClient(countWeights, 1);
 	}
 	virtual double value()
 	{
@@ -634,104 +600,13 @@ public:
 	}
 };
 
-class StatNegTyp1 :public agent
-{
-public:
-	StatNegTyp1(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
-	{
-		numEst = 44;
-	}
-	virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))
-		{
-			choiceT1 = 0;
-		}
-		else { choiceT1 = 1; }
-	}
-	virtual void updateDerived()
-	{
-		int countWeights = 0;
-		if (choiceT)
-		{
-			countWeights = 22;
-		}
-		updateClient(negReward, countWeights, 0);
-		updateClient(negReward, countWeights, 1);
-	}
-	virtual double value()
-	{
-		int countFeat = 0;
-		if (choiceT1)
-		{
-			countFeat = 22;
-		}
-		double client0 = 0;
-		double client1 = 0;
-		client0 = valueClient(0, countFeat);
-		client1 = valueClient(1, countFeat);
-		return(client0 + client1);
-	}
-};
 
-class StatNegTyp2 :public agent
-{
-public:
-	using agent::agent;
-	StatNegTyp2(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI) {
-		numEst = 44;
-	}
-	virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (cleanOptionsT1[0].mytype != absence && cleanOptionsT1[1].mytype != absence)												// if there are no absences, then use desicion rule
-		{
-			if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))
-			{
-				choiceT1 = 0;
-			}
-			else { choiceT1 = 1; }
-		}
-		else if (cleanOptionsT1[0].mytype == absence)																		// if there is an absence, then chose the other option
-		{
-			choiceT1 = 1;
-		}
-		else
-		{
-			choiceT1 = 0;
-		}
-	}
-	virtual void updateDerived()
-	{
-		int countWeights = 0;
-		if (choiceT)
-		{
-			countWeights = 22;
-		}
-		updateClient(negReward, countWeights, 0);
-		updateClient(negReward, countWeights, 1);
-	}
-	virtual double value()
-	{
-		int countFeat = 0;
-		if (choiceT1)
-		{
-			countFeat = 22;
-		}
-		double client0 = 0;
-		double client1 = 0;
-		client0 = valueClient(0, countFeat);
-		client1 = valueClient(1, countFeat);
-		return(client0 + client1);
-	}
-};
 
-class ActPosTy1 :public agent
+class ActPosTy1 :public agent																					// Agents that estimates actions and uses value for every desicion
 {
 public:
-	ActPosTy1(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
+	ActPosTy1(double alphaI, double gammaI, double tauI, double netaI)
+		:agent(alphaI, gammaI, tauI, netaI)
 	{
 		numEst = 11;
 	}
@@ -751,15 +626,15 @@ public:
 	virtual void updateDerived()
 	{
 		int countWeights = 0;
-		updateClient(currentReward, countWeights, choiceT);
+		updateClient(countWeights, choiceT);
 	}
 };
 
-class ActPosTy2 :public agent
+class ActPosTy2 :public agent																					// Agents that estimates actions and only uses value to descriminate between clients
 {
 public:
-	ActPosTy2(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
+	ActPosTy2(double alphaI, double gammaI, double tauI, double netaI)
+		:agent(alphaI, gammaI, tauI,netaI)
 	{
 		numEst = 11;
 	}
@@ -785,7 +660,7 @@ public:
 	virtual void updateDerived()
 	{
 		int countWeights = 0;
-		updateClient(currentReward, countWeights, choiceT);
+		updateClient(countWeights, choiceT);
 	}
 	virtual double value()
 	{
@@ -794,71 +669,5 @@ public:
 	}
 };
 
-class ActNegTy1 :public agent
-{
-public:
-	ActNegTy1(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
-	{
-		numEst = 11;
-	}
-	virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))
-		{
-			choiceT1 = 0;
-		}
-		else { choiceT1 = 1; }
-	}
-	virtual void updateDerived()
-	{
-		int countWeights = 0;
-		updateClient(negReward, countWeights, choiceT);
-	}
-	virtual double value()
-	{
-		int countFeat = 0;
-		return(valueClient(choiceT1,countFeat));
-	}
-};
-
-class ActNegTy2 :public agent
-{
-public:
-	ActNegTy2(double alphaI, double gammaI, double tauI)
-		:agent(alphaI, gammaI, tauI)
-	{
-		numEst = 11;
-	}
-	virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (cleanOptionsT1[0].mytype != absence && cleanOptionsT1[1].mytype != absence)												// if there are no absences, then use desicion rule
-		{
-			if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))
-			{
-				choiceT1 = 0;
-			}
-			else { choiceT1 = 1; }
-		}
-		else if (cleanOptionsT1[0].mytype == absence)																		// if there is an absence, then chose the other option
-		{
-			choiceT1 = 1;
-		}
-		else
-		{
-			choiceT1 = 0;
-		}
-	}
-	virtual void updateDerived()
-	{
-		int countWeights = 0;
-		updateClient(negReward, countWeights, choiceT);
-	}
-	virtual double value()
-	{
-		int countFeat = 0;
-		return(valueClient(choiceT1,countFeat));
-	}
-};
 
 #endif // !CLEANER_H
