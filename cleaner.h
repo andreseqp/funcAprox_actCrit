@@ -77,7 +77,7 @@ agent::agent()																									// basic constructor
 {
 	numEst = 23;
 	client noClient = client();
-	for (size_t i = 0; i < numEst; i++) { featWeights[i] = 0; }
+	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
 	alpha = 0.01, gamma = 0.5, tau = 10, neta = 0;																		// Default values
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;
@@ -92,7 +92,7 @@ agent::agent(double alphaI, double gammaI, double tauI, double netaI)											
 {
 	numEst = 23;
 	client noClient = client();
-	for (size_t i = 0; i < numEst; i++) { featWeights[i] = 0; }
+	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
 	//values[4] = 10, values[2] = 10;
 	alpha = alphaI, gamma = gammaI, tau = tauI, neta = netaI;
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
@@ -114,7 +114,7 @@ void agent::rebirth()
 	currentReward = 0;
 	cumulReward = 0;
 	negReward = 0;
-	for (size_t i = 0; i < numEst; i++) { featWeights[i] = 0; }
+	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
 	DPid = -1;
 	for (size_t i = 0; i < 9; i++) { DPbackup[i] = 0; }
 	//values[4] = 10, values[2] = 10;
@@ -272,7 +272,7 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, dou
 }*/
 void agent::updateClient(int &countWeights, int clientId)																				// change estimated value according to current reward and estimates of future state-action pair
 {
-	for (size_t i = 0; i < cleanOptionsT[clientId].numFeat[0] + cleanOptionsT[clientId].numFeat[1]; i++)
+	for (int i = 0; i < cleanOptionsT[clientId].numFeat[0] + cleanOptionsT[clientId].numFeat[1]; i++)
 	{
 		if (i<cleanOptionsT[clientId].numFeat[0])
 		{
@@ -308,7 +308,7 @@ void agent::printIndData(ofstream &learnSeries, int &seed,double &outbr)
 		cleanOptionsT[0].printClientData(learnSeries); 
 	}
 	learnSeries << DPbackup[DPid] << '\t';
-	for (size_t j = 0; j < numEst; j++)
+	for (int j = 0; j < numEst; j++)
 	{
 		learnSeries << featWeights[j] << '\t';
 		//cout << values[j] << '\t';
@@ -340,7 +340,7 @@ double agent::softMax(double &value1, double &value2)
 double agent::valueClient(int clientid, int &countFeat)
 {
 	double temp = 0;
-	for (size_t i = 0; i < cleanOptionsT1[clientid].numFeat[0] + cleanOptionsT1[clientid].numFeat[1]; i++)
+	for (int i = 0; i < cleanOptionsT1[clientid].numFeat[0] + cleanOptionsT1[clientid].numFeat[1]; i++)
 	{
 		if (i < cleanOptionsT1[clientid].numFeat[0])
 		{

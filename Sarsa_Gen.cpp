@@ -65,7 +65,7 @@ void draw(client trainingSet[], int rounds, double &probRes, double &probVis)
 {
 	double cumProbs[3] = { probRes, probRes + probVis, 1 };
 	double rndNum;
-	for (size_t i = 0; i < rounds * 2; i++)
+	for (int i = 0; i < rounds * 2; i++)
 	{
 		rndNum = rnd::uniform();
 		if (rndNum < cumProbs[0]) { trainingSet[i] = client(resident,residMeans,residSds,mins,residProbs,ResReward); }
@@ -191,11 +191,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	double tauRange[3] = { 1, 2, 5};
 	
-	double netaT;
+	double netaT = 0;
 
 	double netaRange[1] = { 0.5 };
-
-	double outbr;
 
 
 	int seed = 12;
@@ -229,7 +227,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				{
 					draw(clientSet, totRounds, ResProb, VisProb);
 					idClientSet = 0;
-					for (size_t j = 0; j < totRounds; j++)
+					for (int j = 0; j < totRounds; j++)
 					{
 						learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, VisReward, ResReward,inbr,outbr, negativeRew,experiment);
 						learners[k]->updateDerived();
