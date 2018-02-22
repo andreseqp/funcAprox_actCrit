@@ -88,7 +88,7 @@ std::string douts(double j)			// turns double into string
 	return s.str();
 }
 
-string create_filename(std::string filename, agent &individual, int &seed, double &bias)
+string create_filename(std::string filename, agent &individual, int &seed, double &outbr)
 {
 	// name the file with the parameter specifications
 	filename.append("_alph");
@@ -97,29 +97,39 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 	filename.append(douts(individual.getLearnPar(gammaPar)));
 	filename.append("_tau");
 	filename.append(douts(individual.getLearnPar(tauPar)));
-	filename.append("_bias");
-	filename.append(douts(bias));
+	filename.append("_neta");
+	filename.append(douts(individual.getLearnPar(netaPar)));
+	filename.append("_outb");
+	filename.append(douts(outbr));
 	filename.append("_seed");
 	filename.append(itos(seed));
 	filename.append(".txt");
 	return(filename);
 }
 
-void initializeIndFile(ofstream &indOutput, agent &learner, int &seed,double &bias)
+void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, int &seed,double &outbr)
 {
-	std::string namedir = "C:\\Users\\quinonesa\\prelimResults\\functionAprox\\";// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; // "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
+	std::string namedir = "D:\\quinonesa\\Simulation\\FunctionAprox\\";
+	// "S:\\quinonesa\\Simulations\\Basic_sarsa\\"; //  //"M:\\prelim_results\\General\\"; // "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
+	std::string namedirDP = "D:\\quinonesa\\Simulation\\FunctionAprox\\";
+	//"S:\\quinonesa\\Simulations\\Basic_sarsa\\"; //"M:\\prelim_results\\General\\"; // "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
 	std::string folder = typeid(learner).name();
-	folder.erase(0, 6).append("\\IndTrain_test");
+	std::string DPfolder = folder;
+	folder.erase(0, 6).append("\\FuncAprox");
+	DPfolder.erase(0, 6).append("\\DP");
 	namedir.append(folder);
+	namedirDP.append(DPfolder);
 	cout << namedir << endl;
-	string IndFile = create_filename(namedir, learner, seed, bias);
+	string IndFile = create_filename(namedir, learner, seed, outbr);
+	string DPfile = create_filename(namedirDP, learner, seed, outbr);
 	indOutput.open(IndFile.c_str());
-	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Bias" << '\t' << "Current.Reward" << '\t' << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
+	DPOutput.open(DPfile.c_str());
+	indOutput.open(IndFile.c_str());
+	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
 	indOutput << "value_choice" << '\t' << "Type_choice" << '\t' << "Height_choice" << '\t' << "Length_choice" << '\t' << "redMain_choice" << '\t' << "greenMain_choice" << '\t' << "blueMain_choice" << '\t';
 	indOutput << "redSec_choice" << '\t' << "greenSec_choice" << '\t' << "blueSec_choice" << '\t' << "secCol_choice" << '\t' << "strip_choice" << '\t' << "dots_choice" << '\t';
 	indOutput << "value_discard" << '\t' << "Type_discard" << '\t' << "Height_discard" << '\t' << "Length_discard" << '\t' << "redMain_discard" << '\t' << "greenMain_discard" << '\t' << "blueMain_discard" << '\t';
 	indOutput << "redSec_discard" << '\t' << "greenSec_discard" << '\t' << "blueSec_discard" << '\t' << "secCol_discard" << '\t' << "strip_discard" << '\t' << "dots_discard" << '\t';
-	indOutput << "DPUpdate" << '\t';
 	if (learner.numEst > 11)
 	{
 		if (learner.numEst > 23)
@@ -148,6 +158,9 @@ void initializeIndFile(ofstream &indOutput, agent &learner, int &seed,double &bi
 		indOutput << "redSec_1" << '\t' << "greenSec_1" << '\t' << "blueSec_1" << '\t' << "secCol_1" << '\t' << "strip_1" << '\t' << "dots_1" << '\t';
 	}
 	indOutput << endl;
+	DPOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
+	DPOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t' << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t' << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
+	DPOutput << endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -222,7 +235,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			
 			for (int k=0;k<1;++k)  //numlearn
 			{
-				initializeIndFile(printTest, *learners[k], seed, outbr);
+				initializeIndFile(printTest, DPprint, *learners[k], seed, outbr);
 				for (int i = 0; i < trainingRep; i++)
 				{
 					draw(clientSet, totRounds, ResProb, VisProb);
