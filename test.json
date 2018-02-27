@@ -1,21 +1,18 @@
 {
-	"totRounds" : 20000,
+	"totRounds" : 10000,
 	"ResReward" : 10,
 	"ResProb" : 0.2,
 	"ResProbLeav" : 0,
 	"VisProbLeav" : 1,
 	"negativeRew" : -10,
-	"experiment" : FALSE,
+	"experiment" : false,
 	"inbr" : 0.0,
 	"outbr" : 0.3,
-	"trainingRep" : 30,
+	"trainingRep" : 5,
 	"alphaT" : 0.01,
 	"printGen" : 1,
 	"seed" : 7,
-
 	"gammaRange" : [ 0, 0.5, 0.8 ],
-
-	"tauRange" : [ 1, 2, 5, 10],
-
-	"netaRange" : [ 0, 0.5],
+	"tauRange" : [ 2, 5, 10],
+	"netaRange" : [ 0, 0.5]
 }

@@ -42,6 +42,7 @@ Last edit date:
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
 // Random number generator
 #include "M:\\Routines\\C++\\RandomNumbers\\random.h" 
 //H for house pc, E for laptop, M for Office
@@ -110,6 +111,8 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 	filename.append(douts(individual.getLearnPar(gammaPar)));
 	filename.append("_tau");
 	filename.append(douts(individual.getLearnPar(tauPar)));
+	filename.append("_neta");
+	filename.append(douts(individual.getLearnPar(netaPar)));
 	filename.append("_bias");
 	filename.append(douts(bias));
 	filename.append("_seed");
@@ -118,16 +121,24 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 	return(filename);
 }
 
-void initializeIndFile(ofstream &indOutput, agent &learner, int &seed,double &bias)
+void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, int &seed,double &outbr)
 {
-	std::string namedir = "C:\\Users\\quinonesa\\prelimResults\\functionAprox\\";
-	// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; // "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
+	std::string namedir = "D:\\quinonesa\\Simulation\\functionAprox\\"; 
+	std::string namedirDP = "D:\\quinonesa\\Simulation\\functionAprox\\";
+	// "C:\\Users\\quinonesa\\prelimResults\\functionAprox\\";
+	// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; 
+	// "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
 	std::string folder = typeid(learner).name();
-	folder.erase(0, 6).append("\\IndTrain_test");
+	std::string DPfolder = folder;
+	folder.erase(0, 6).append("\\IndTrain");
+	DPfolder.erase(0, 6).append("\\DP");
 	namedir.append(folder);
+	namedirDP.append(DPfolder);
 	cout << namedir << endl;
-	string IndFile = create_filename(namedir, learner, seed, bias);
+	string IndFile = create_filename(namedir, learner, seed, outbr);
+	string DPfile = create_filename(namedirDP, learner, seed, outbr);
 	indOutput.open(IndFile.c_str());
+	DPOutput.open(DPfile.c_str());
 	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
 	indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
 	indOutput << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward";
@@ -185,11 +196,10 @@ void initializeIndFile(ofstream &indOutput, agent &learner, int &seed,double &bi
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	std::ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
-	if (!input.is_open()) { cout << "JSON file is not open" << endl; }
-	nlohmann::json param = nlohmann::json::parse(input);
 
-	cout << param.dump() << endl;
+	std::ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
+	if (input.fail()) { cout << "JSON file failed" << endl; }
+	nlohmann::json param = nlohmann::json::parse(input);
 
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
@@ -210,16 +220,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	double gammaT;
 
-	double gammaRange[3] = { param["gammaRange"] };
-
-	double tauT;
-
-	double tauRange[4] = { param["tauRange"] };
-
-	double netaT;
-
-	double netaRange[2] = { param["netaRange"] };
-
+	vector <double> gammaRange;
+	vector <double> tauRange;
+	vector <double> netaRange;
+	for (nlohmann::json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg) {
+		gammaRange.push_back(*itg);
+	}
+	for (nlohmann::json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) {
+		tauRange.push_back(*itt);
+	}
+	for (nlohmann::json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) {
+		netaRange.push_back(*itn);
+	}
+	
 	for (size_t i = 0; i < 8; i++)
 	{
 		visitMeans[i] = 40;
@@ -274,33 +287,29 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	agent *learners[numlearn];
 
-	for (int n = 0; n < 2; n++)
+	for (vector<double>::iterator itNeta = netaRange.begin(); itNeta < netaRange.end(); ++itNeta)
 	{
-		for (size_t k = 0; k < 3; k++)
+		for (vector<double>::iterator itGam = gammaRange.begin(); itGam < gammaRange.end(); ++itGam)
 		{
-			for (size_t l = 0; l < 3; l++)
+			for (vector<double>::iterator itTau = tauRange.begin(); itTau < tauRange.end(); ++itTau)
 			{
-				netaT = netaRange[n];
-				gammaT = gammaRange[k];
-				tauT = tauRange[0];
 				ofstream printTest;
 				ofstream DPprint;
 
-				learners[0] = new StatPosTyp1(alphaT, gammaT, tauT, netaT);
-				learners[4] = new ActPosTy1(alphaT, gammaT, tauT, netaT);
+				learners[0] = new StatPosTyp1(alphaT, *itGam, *itTau, *itNeta);
+				learners[1] = new ActPosTy1(alphaT, *itGam, *itTau, *itNeta);
 
-				//learners[0] = new StatPosTyp2(alphaT, gammaT, tauT);
-
-				for (int k = 0; k < 2; ++k)  //numlearn
+				for (int k = 0; k < numlearn; ++k)  //numlearn
 				{
-					initializeIndFile(printTest, *learners[k], seed, outbr);
+					initializeIndFile(printTest, DPprint, *learners[k], seed, outbr);
 					for (int i = 0; i < trainingRep; i++)
 					{
 						draw(clientSet, totRounds, ResProb, VisProb);
 						idClientSet = 0;
 						for (int j = 0; j < totRounds; j++)
 						{
-							learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, VisReward, ResReward, inbr, outbr, negativeRew, experiment);
+							learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, 
+								VisReward, ResReward, inbr, outbr, negativeRew, experiment);
 							learners[k]->updateDerived();
 							if (j%printGen == 0)
 							{
@@ -310,7 +319,8 @@ int _tmain(int argc, _TCHAR* argv[])
 						learners[k]->rebirth();
 					}
 					printTest.close();
-					learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr, ResReward, VisReward, negativeRew, DPprint, experiment);
+					learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr, 
+						ResReward, VisReward, negativeRew, DPprint, experiment);
 					DPprint.close();
 					delete learners[k];
 				}
