@@ -291,11 +291,9 @@ void agent::updateClient(int &countWeights, int clientId)																				// 
 void agent::printIndData(ofstream &learnSeries, int &seed,double &outbr)
 {
 	learnSeries << seed << '\t' << age << '\t';
-	//cout << seed << '\t' << age << '\t';
 	learnSeries << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
 	learnSeries << outbr << '\t';
 	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
-	//cout << currentReward << '\t' << cumulReward << '\t';
 	learnSeries << valuesT[choiceT] << '\t';
 	cleanOptionsT[choiceT].printClientData(learnSeries);
 	if (choiceT == 0) 
@@ -307,7 +305,6 @@ void agent::printIndData(ofstream &learnSeries, int &seed,double &outbr)
 		learnSeries << valuesT[0] << '\t';
 		cleanOptionsT[0].printClientData(learnSeries); 
 	}
-	learnSeries << DPbackup[DPid] << '\t';
 	for (int j = 0; j < numEst; j++)
 	{
 		learnSeries << featWeights[j] << '\t';
