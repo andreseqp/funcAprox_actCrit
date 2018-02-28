@@ -113,13 +113,8 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 	filename.append(douts(individual.getLearnPar(tauPar)));
 	filename.append("_neta");
 	filename.append(douts(individual.getLearnPar(netaPar)));
-
 	filename.append("_outb");
 	filename.append(douts(outbr));
-
-
-
-
 	filename.append("_seed");
 	filename.append(itos(seed));
 	filename.append(".txt");
@@ -128,15 +123,6 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 
 void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, int &seed,double &outbr)
 {
-
-
-
-
-
-
-
-
-
 	std::string namedir = "D:\\quinonesa\\Simulation\\functionAprox\\"; 
 	std::string namedirDP = "D:\\quinonesa\\Simulation\\functionAprox\\";
 	// "C:\\Users\\quinonesa\\prelimResults\\functionAprox\\";
@@ -145,7 +131,6 @@ void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, 
 	std::string folder = typeid(learner).name();
 	std::string DPfolder = folder;
 	folder.erase(0, 6).append("\\IndTrain");
-
 	DPfolder.erase(0, 6).append("\\DP");
 	namedir.append(folder);
 	namedirDP.append(DPfolder);
@@ -154,14 +139,6 @@ void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, 
 	string DPfile = create_filename(namedirDP, learner, seed, outbr);
 	indOutput.open(IndFile.c_str());
 	DPOutput.open(DPfile.c_str());
-
-
-
-
-
-
-
-
 	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
 	indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
 	indOutput << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward";
@@ -223,8 +200,8 @@ void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
-	std::ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
+	std::ifstream input(argv[1]);
+	//"D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	nlohmann::json param = nlohmann::json::parse(input);
 
@@ -247,19 +224,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	double gammaT;
 
-	vector <double> gammaRange;
-	vector <double> tauRange;
-	vector <double> netaRange;
-	for (nlohmann::json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg) {
-		gammaRange.push_back(*itg);
-	}
-	for (nlohmann::json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) {
-		tauRange.push_back(*itt);
-	}
-	for (nlohmann::json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) {
-		netaRange.push_back(*itn);
-	}
-	
 	for (size_t i = 0; i < 8; i++)
 	{
 		visitMeans[i] = 40;
@@ -275,36 +239,36 @@ int _tmain(int argc, _TCHAR* argv[])
 	visitMeans[1] = 20, residMeans[1] = 30;
 	residProbs[0] = 0;
 	mins[0] = 10, mins[1] = 10;
-	//int totRounds = 100000;
-	//ResReward = 10;
-	//VisReward = 10;
-	//double ResProb = 0.2;
-	//double VisProb = 0.2;
-	//double ResProbLeav = 0;
-	//double VisProbLeav = 1;
-	//double negativeRew = -10;
-	//bool experiment = 0;
-	//double inbr = 0.0;
-	//double outbr = 0;
-	//int const trainingRep = 15;//30
-	//double alphaT = 0.000001;
-	//const int numlearn = 2;
-	//int printGen = 10;
+	/*int totRounds = 100000;
+	ResReward = 10;
+	VisReward = 10;
+	double ResProb = 0.2;
+	double VisProb = 0.2;
+	double ResProbLeav = 0;
+	double VisProbLeav = 1;
+	double negativeRew = -10;
+	bool experiment = 0;
+	double inbr = 0.0;
+	double outbr = 0;
+	int const trainingRep = 15;//30
+	double alphaT = 0.000001;
+	const int numlearn = 2;
+	int printGen = 10;
 
-	//double gammaT;
+	double gammaT;
 
-	//double gammaRange[3] = { 0, 0.5, 0.8 };
+	double gammaRange[3] = { 0, 0.5, 0.8 };
 
-	//double tauT;
+	double tauT;
 
-	//double tauRange[3] = { 1, 2, 5};
-	//
-	//double netaT = 0;
+	double tauRange[3] = { 1, 2, 5};
+	
+	double netaT = 0;
 
-	//double netaRange[1] = { 0.5 };
+	double netaRange[1] = { 0.5 };
 
 
-	//int seed = 12;
+	int seed = 12;*/
 
 	rnd::set_seed(seed);
 
@@ -314,24 +278,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	agent *learners[numlearn];
 
-	for (vector<double>::iterator itNeta = netaRange.begin(); itNeta < netaRange.end(); ++itNeta)
+	
+	for (nlohmann::json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) 
 	{
-		for (vector<double>::iterator itGam = gammaRange.begin(); itGam < gammaRange.end(); ++itGam)
+		for (nlohmann::json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg)
 		{
-			for (vector<double>::iterator itTau = tauRange.begin(); itTau < tauRange.end(); ++itTau)
+			for (nlohmann::json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) 
 			{
-
-
-
-
 				ofstream printTest;
 				ofstream DPprint;
-
-				learners[0] = new StatPosTyp1(alphaT, *itGam, *itTau, *itNeta);
-				learners[1] = new ActPosTy1(alphaT, *itGam, *itTau, *itNeta);
+				learners[0] = new StatPosTyp1(alphaT, *itg, *itt, *itn);
+				learners[1] = new ActPosTy1(alphaT, *itg, *itt, *itn);
 
 				for (int k = 0; k < numlearn; ++k)  //numlearn
->>>>>>> json
 				{
 					initializeIndFile(printTest, DPprint, *learners[k], seed, outbr);
 					for (int i = 0; i < trainingRep; i++)
