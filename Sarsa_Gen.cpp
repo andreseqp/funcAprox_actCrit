@@ -57,6 +57,7 @@ Last edit date:
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
 using namespace std;
+using json = nlohmann::json;
 
 double visitMeans[8], visitSds[8], visitProbs[3];
 double residMeans[8], residSds[8], residProbs[3];
@@ -102,7 +103,7 @@ std::string douts(double j)			// turns double into string
 	return s.str();
 }
 
-string create_filename(std::string filename, agent &individual, int &seed, double &outbr)
+string create_filename(std::string filename, agent &individual, nlohmann::json param)
 {
 	// name the file with the parameter specifications
 	filename.append("_alph");
@@ -114,14 +115,14 @@ string create_filename(std::string filename, agent &individual, int &seed, doubl
 	filename.append("_neta");
 	filename.append(douts(individual.getLearnPar(netaPar)));
 	filename.append("_outb");
-	filename.append(douts(outbr));
+	filename.append(douts(param["outbr"]));
 	filename.append("_seed");
-	filename.append(itos(seed));
+	filename.append(itos(param["seed"]));
 	filename.append(".txt");
 	return(filename);
 }
 
-void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, int &seed,double &outbr)
+void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, nlohmann::json param)
 {
 	std::string namedir = "D:\\quinonesa\\Simulation\\functionAprox\\"; 
 	std::string namedirDP = "D:\\quinonesa\\Simulation\\functionAprox\\";
@@ -134,9 +135,11 @@ void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, 
 	DPfolder.erase(0, 6).append("\\DP");
 	namedir.append(folder);
 	namedirDP.append(DPfolder);
-	cout << namedir << endl;
-	string IndFile = create_filename(namedir, learner, seed, outbr);
-	string DPfile = create_filename(namedirDP, learner, seed, outbr);
+	cout << namedir << '\t' << learner.getLearnPar(alphaPar) << '\t';
+	cout << learner.getLearnPar(gammaPar) << '\t' << learner.getLearnPar(tauPar) << '\t';
+	cout << learner.getLearnPar(netaPar) << endl;
+	string IndFile = create_filename(namedir, learner, param);
+	string DPfile = create_filename(namedirDP, learner, param);
 	indOutput.open(IndFile.c_str());
 	DPOutput.open(DPfile.c_str());
 	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
@@ -200,10 +203,10 @@ void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	std::ifstream input(argv[1]);
-	//"D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
+	ifstream input(argv[1]);
+	//ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
 	if (input.fail()) { cout << "JSON file failed" << endl; }
-	nlohmann::json param = nlohmann::json::parse(input);
+	json param = nlohmann::json::parse(input);
 
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
@@ -222,8 +225,28 @@ int _tmain(int argc, _TCHAR* argv[])
 	int printGen = param["printGen"];
 	int seed = param["seed"];
 
-	double gammaT;
+	json::iterator vsd = param["visitors"]["Sp1"]["sds"].begin();
+	json::iterator rm = param["residents"]["Sp1"]["means"].begin();
+	json::iterator rsds = param["residents"]["Sp1"]["sds"].begin();
+	for (json::iterator vm = param["visitors"]["Sp1"]["means"].begin(); 
+		vm != param["visitors"]["Sp1"]["means"].end(); vm++)
+	{
+		visitMeans[vm-param["visitors"]["Sp1"]["means"].begin()] = *vm;
+		visitSds[vsd-param["visitors"]["Sp1"]["sds"].begin()] = *vsd, ++vsd;
+		residMeans[rm-param["residents"]["Sp1"]["means"].begin()] = *rm, ++rm;
+		residSds[rsds-param["residents"]["Sp1"]["sds"].begin()] = *rsds, ++rsds;
+	}
 
+	json::iterator vp = param["visitors"]["Sp1"]["probs"].begin();
+	for (json::iterator rp = param["residents"]["Sp1"]["probs"].begin();
+		rp != param["residents"]["Sp1"]["probs"].end(); ++rp)
+	{
+		residProbs[rp - param["residents"]["Sp1"]["probs"].begin()] = *rp;
+		visitProbs[vp - param["visitors"]["Sp1"]["probs"].begin()] = *vp, ++vp;
+	}
+
+	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
+	 /*
 	for (size_t i = 0; i < 8; i++)
 	{
 		visitMeans[i] = 40;
@@ -239,7 +262,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	visitMeans[1] = 20, residMeans[1] = 30;
 	residProbs[0] = 0;
 	mins[0] = 10, mins[1] = 10;
-	/*int totRounds = 100000;
+	int totRounds = 100000;
 	ResReward = 10;
 	VisReward = 10;
 	double ResProb = 0.2;
@@ -279,11 +302,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	agent *learners[numlearn];
 
 	
-	for (nlohmann::json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) 
+	for (json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) 
 	{
-		for (nlohmann::json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg)
+		for (json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg)
 		{
-			for (nlohmann::json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) 
+			for (json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) 
 			{
 				ofstream printTest;
 				ofstream DPprint;
@@ -292,7 +315,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 				for (int k = 0; k < numlearn; ++k)  //numlearn
 				{
-					initializeIndFile(printTest, DPprint, *learners[k], seed, outbr);
+					initializeIndFile(printTest, DPprint, *learners[k], param);
 					for (int i = 0; i < trainingRep; i++)
 					{
 						draw(clientSet, totRounds, ResProb, VisProb);
