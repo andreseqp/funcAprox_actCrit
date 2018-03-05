@@ -122,83 +122,95 @@ string create_filename(std::string filename, agent &individual, nlohmann::json p
 	return(filename);
 }
 
-void initializeIndFile(ofstream &indOutput, ofstream &DPOutput, agent &learner, nlohmann::json param)
+void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param, bool DP)
 {
-	std::string namedir = "D:\\quinonesa\\Simulation\\functionAprox\\"; 
-	std::string namedirDP = "D:\\quinonesa\\Simulation\\functionAprox\\";
+	std::string namedir = param["folder"];
+	//"D:\\quinonesa\\Simulation\\functionAprox\\"; 
+	std::string namedirDP = param["folder"];
+	//"D:\\quinonesa\\Simulation\\functionAprox\\";
 	// "C:\\Users\\quinonesa\\prelimResults\\functionAprox\\";
 	// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; 
 	// "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
-	std::string folder = typeid(learner).name();
-	std::string DPfolder = folder;
-	folder.erase(0, 6).append("\\IndTrain");
-	DPfolder.erase(0, 6).append("\\DP");
-	namedir.append(folder);
-	namedirDP.append(DPfolder);
-	cout << namedir << '\t' << learner.getLearnPar(alphaPar) << '\t';
-	cout << learner.getLearnPar(gammaPar) << '\t' << learner.getLearnPar(tauPar) << '\t';
-	cout << learner.getLearnPar(netaPar) << endl;
-	string IndFile = create_filename(namedir, learner, param);
-	string DPfile = create_filename(namedirDP, learner, param);
-	indOutput.open(IndFile.c_str());
-	DPOutput.open(DPfile.c_str());
-	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
-	indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
-	indOutput << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward";
-	indOutput << '\t' << "Neg.Reward" << '\t';
-	indOutput << "value_choice" << '\t' << "Type_choice" << '\t' << "Height_choice" << '\t';
-	indOutput << "Length_choice" << '\t' << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
-	indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t' << "greenSec_choice" << '\t';
-	indOutput << "blueSec_choice" << '\t' << "secCol_choice" << '\t' << "strip_choice" << '\t';
-	indOutput << "dots_choice" << '\t' << "value_discard" << '\t' << "Type_discard" << '\t';
-	indOutput << "Height_discard" << '\t' << "Length_discard" << '\t' << "redMain_discard" << '\t';
-	indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t' << "redSec_discard" << '\t';
-	indOutput << "greenSec_discard" << '\t' << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
-	indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
-
-	if (learner.numEst > 11)
+	std::string folder;
+	if(DP)
 	{
-		if (learner.numEst > 23)
+		folder = "\\DP";
+	}
+	else
+	{
+		folder = typeid(learner).name();
+		folder.erase(0, 6).append("_");
+		cout << folder << '\t' << learner.getLearnPar(alphaPar) << '\t';
+		cout << learner.getLearnPar(gammaPar) << '\t' << learner.getLearnPar(tauPar) << '\t';
+		cout << learner.getLearnPar(netaPar) << endl;
+
+	}
+	namedir.append(folder);
+	string IndFile = create_filename(namedir, learner, param);
+	indOutput.open(IndFile.c_str());
+	if(DP)
+	{
+		indOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
+		indOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t' << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t' << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
+		indOutput << endl;
+	}
+	else
+	{
+		indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
+		indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
+		indOutput << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward";
+		indOutput << '\t' << "Neg.Reward" << '\t';
+		indOutput << "value_choice" << '\t' << "Type_choice" << '\t' << "Height_choice" << '\t';
+		indOutput << "Length_choice" << '\t' << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
+		indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t' << "greenSec_choice" << '\t';
+		indOutput << "blueSec_choice" << '\t' << "secCol_choice" << '\t' << "strip_choice" << '\t';
+		indOutput << "dots_choice" << '\t' << "value_discard" << '\t' << "Type_discard" << '\t';
+		indOutput << "Height_discard" << '\t' << "Length_discard" << '\t' << "redMain_discard" << '\t';
+		indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t' << "redSec_discard" << '\t';
+		indOutput << "greenSec_discard" << '\t' << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
+		indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
+
+		if (learner.numEst > 11)
 		{
-			indOutput << "Height_1_0" << '\t' << "Length_1_0" << '\t' << "redMain_1_0" << '\t';
-			indOutput << "greenMain_1_0" << '\t' << "blueMain_1_0" << '\t' << "redSec_1_0" << '\t';
-			indOutput << "greenSec_1_0" << '\t' << "blueSec_1_0" << '\t' << "secCol_1_0" << '\t';
-			indOutput << "strip_1_0" << '\t' << "dots_1_0" << '\t' << "Height_2_0" << '\t';
-			indOutput << "Length_2_0" << '\t' << "redMain_2_0" << '\t' << "greenMain_2_0" << '\t';
-			indOutput << "blueMain_2_0" << '\t' << "redSec_2_0" << '\t' << "greenSec_2_0" << '\t';
-			indOutput << "blueSec_2_0" << '\t' << "secCol_2_0" << '\t' << "strip_2_0" << '\t';
-			indOutput << "dots_2_0" << '\t' << "Height_1_1" << '\t' << "Length_1_1" << '\t' ;
-			indOutput << "redMain_1_1" << '\t' << "greenMain_1_1" << '\t' << "blueMain_1_1" << '\t';
-			indOutput << "redSec_1_1" << '\t' << "greenSec_1_1" << '\t' << "blueSec_1_1" << '\t';
-			indOutput << "secCol_1_1" << '\t' << "strip_1_1" << '\t' << "dots_1_1" << '\t';
-			indOutput << "Height_2_1" << '\t' << "Length_2_1" << '\t' << "redMain_2_1" << '\t';
-			indOutput << "greenMain_2_1" << '\t' << "blueMain_2_1" << '\t';
-			indOutput << "redSec_2_1" << '\t' << "greenSec_2_1" << '\t' << "blueSec_2_1" << '\t';
-			indOutput << "secCol_2_1" << '\t' << "strip_2_1" << '\t' << "dots_2_1" << '\t';
+			if (learner.numEst > 23)
+			{
+				indOutput << "Height_1_0" << '\t' << "Length_1_0" << '\t' << "redMain_1_0" << '\t';
+				indOutput << "greenMain_1_0" << '\t' << "blueMain_1_0" << '\t' << "redSec_1_0" << '\t';
+				indOutput << "greenSec_1_0" << '\t' << "blueSec_1_0" << '\t' << "secCol_1_0" << '\t';
+				indOutput << "strip_1_0" << '\t' << "dots_1_0" << '\t' << "Height_2_0" << '\t';
+				indOutput << "Length_2_0" << '\t' << "redMain_2_0" << '\t' << "greenMain_2_0" << '\t';
+				indOutput << "blueMain_2_0" << '\t' << "redSec_2_0" << '\t' << "greenSec_2_0" << '\t';
+				indOutput << "blueSec_2_0" << '\t' << "secCol_2_0" << '\t' << "strip_2_0" << '\t';
+				indOutput << "dots_2_0" << '\t' << "Height_1_1" << '\t' << "Length_1_1" << '\t';
+				indOutput << "redMain_1_1" << '\t' << "greenMain_1_1" << '\t' << "blueMain_1_1" << '\t';
+				indOutput << "redSec_1_1" << '\t' << "greenSec_1_1" << '\t' << "blueSec_1_1" << '\t';
+				indOutput << "secCol_1_1" << '\t' << "strip_1_1" << '\t' << "dots_1_1" << '\t';
+				indOutput << "Height_2_1" << '\t' << "Length_2_1" << '\t' << "redMain_2_1" << '\t';
+				indOutput << "greenMain_2_1" << '\t' << "blueMain_2_1" << '\t';
+				indOutput << "redSec_2_1" << '\t' << "greenSec_2_1" << '\t' << "blueSec_2_1" << '\t';
+				indOutput << "secCol_2_1" << '\t' << "strip_2_1" << '\t' << "dots_2_1" << '\t';
+			}
+			else
+			{
+				indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
+				indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t';
+				indOutput << "redSec_1" << '\t' << "greenSec_1" << '\t' << "blueSec_1" << '\t';
+				indOutput << "secCol_1" << '\t' << "strip_1" << '\t' << "dots_1" << '\t';
+				indOutput << "Height_2" << '\t' << "Length_2" << '\t' << "redMain_2" << '\t';
+				indOutput << "greenMain_2" << '\t' << "blueMain_2" << '\t' << "redSec_2" << '\t';
+				indOutput << "greenSec_2" << '\t' << "blueSec_2" << '\t' << "secCol_2" << '\t';
+				indOutput << "strip_2" << '\t' << "dots_2" << '\t' << "featChoice";
+			}
 		}
 		else
 		{
 			indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
-			indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t';
-			indOutput << "redSec_1" << '\t' << "greenSec_1" << '\t' << "blueSec_1" << '\t';
-			indOutput << "secCol_1" << '\t' << "strip_1" << '\t' << "dots_1" << '\t';
-			indOutput << "Height_2" << '\t' << "Length_2" << '\t' << "redMain_2" << '\t';
-			indOutput << "greenMain_2" << '\t' << "blueMain_2" << '\t' << "redSec_2" << '\t';
-			indOutput << "greenSec_2" << '\t' << "blueSec_2" << '\t' << "secCol_2" << '\t';
-			indOutput << "strip_2" << '\t' << "dots_2" << '\t' << "featChoice";
+			indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t' << "redSec_1" << '\t';
+			indOutput << "greenSec_1" << '\t' << "blueSec_1" << '\t' << "secCol_1" << '\t';
+			indOutput << "strip_1" << '\t' << "dots_1" << '\t';
 		}
+		indOutput << endl;
 	}
-	else
-	{
-		indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
-		indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t' << "redSec_1" << '\t';
-		indOutput << "greenSec_1" << '\t' << "blueSec_1" << '\t' << "secCol_1" << '\t';
-		indOutput << "strip_1" << '\t' << "dots_1" << '\t';
-	}
-	indOutput << endl;
-	DPOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
-	DPOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t' << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t' << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
-	DPOutput << endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -312,10 +324,9 @@ int _tmain(int argc, _TCHAR* argv[])
 				ofstream DPprint;
 				learners[0] = new StatPosTyp1(alphaT, *itg, *itt, *itn);
 				learners[1] = new ActPosTy1(alphaT, *itg, *itt, *itn);
-
 				for (int k = 0; k < numlearn; ++k)  //numlearn
 				{
-					initializeIndFile(printTest, DPprint, *learners[k], param);
+					initializeIndFile(printTest, *learners[k], param,0);
 					for (int i = 0; i < trainingRep; i++)
 					{
 						draw(clientSet, totRounds, ResProb, VisProb);
@@ -333,9 +344,12 @@ int _tmain(int argc, _TCHAR* argv[])
 						learners[k]->rebirth();
 					}
 					printTest.close();
-					learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr, 
-						ResReward, VisReward, negativeRew, DPprint, experiment);
-					DPprint.close();
+					if (k == 0) {
+						initializeIndFile(DPprint, *learners[0], param, 1);
+						learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr,
+							ResReward, VisReward, negativeRew, DPprint, experiment);
+						DPprint.close();
+					}					
 					delete learners[k];
 				}
 

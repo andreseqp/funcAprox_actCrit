@@ -1,1 +1,33 @@
-["{\"alpha\":[1,2,3,4,5],\"beta\":[\"Bravo\"],\"gamma\":{\"a\":[1,2,3],\"b\":{}},\"delta\":[true,false]}"]
+{
+  "totRounds": 5000,
+  "ResReward": 10,
+  "ResProb": 0.2,
+  "ResProbLeav": 0,
+  "VisProbLeav": 1,
+  "negativeRew": -10,
+  "experiment": false,
+  "inbr": 0,
+  "outbr": 0.3,
+  "trainingRep": 5,
+  "alphaT": 0.01,
+  "printGen": 1,
+  "seed": 7,
+  "gammaRange": [0, 0.5, 0.8],
+  "tauRange": [2, 5, 10],
+  "netaRange": [0, 0.5],
+  "mins": [10, 10],
+  "visitors": {
+    "Sp1": {
+      "means": [30, 20, 40, 40, 40, 40, 40, 40],
+      "sds": [3, 3, 3, 3, 3, 3, 3, 3],
+      "probs": [1, 1, 1]
+    }
+  },
+  "residents": {
+    "Sp1": {
+      "means": [20, 30, 40, 40, 40, 40, 40, 40],
+      "sds": [3, 3, 3, 3, 3, 3, 3, 3],
+      "probs": [0, 1, 1]
+    }
+  }
+}
