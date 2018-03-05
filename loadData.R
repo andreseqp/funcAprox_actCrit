@@ -4,11 +4,9 @@ library("data.table")
 
 genDir<-"D:\\quinonesa\\Simulation\\functionAprox\\"
 
-agenDir<-paste(genDir,"ActPosTy1",sep='')
+setwd(genDir)
 
-setwd(agenDir)
-
-listAgen<-list.files()
+listAgen<-list.files(recursive = TRUE)
 
 listTrain<-grep('IndTrain',listAgen,value = TRUE)
 

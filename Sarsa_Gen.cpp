@@ -313,7 +313,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	agent *learners[numlearn];
 
-	
+	cout << param["folder"] << endl;
 	for (json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) 
 	{
 		for (json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg)
@@ -359,7 +359,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	delete[] clientSet;
 	
-	wait_for_return();
+	//wait_for_return();
 
 	return 0;
 }
