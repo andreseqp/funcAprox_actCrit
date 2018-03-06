@@ -2,31 +2,69 @@
 
 library("jsonlite")
 
+re
+
 codedir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
 
-simsdir<-"D:\\quinonesa\\Simulation\\functionAprox"
+simsdir<-"D:\\quinonesa\\Simulation\\functionAprox\\"
 
-param<-fromJSON(paste(codedir,"\\test.json",sep=""))
+fileName<-"parameters.json"
 
-param$totRounds<-30000
-param$outbr <-0
-param$trainingRep<-10
-param$alphaT<-0.0001
-param$printGen <-100
-basefolder<-"D:\\quinonesa\\Simulation\\functionAprox\\"
+
+test<-fromJSON(paste(codedir,"\\test.json",sep=""))
+
+param<-list(totRounds=30000,resReward=10,visReward=10,ResProbLeav=0,
+            VisProbLeav=1,negativeRew=-10,experiment=FALSE,inbr=0,
+            outbr=0,trainingRep=30,
+            alphaT=0.0001,printGen=100,seed=1, gammaRange=c(0,0.5,0.8),
+            tauRange=c(2,5,10),netaRange=c(0,0.5),mins=c(10,10),
+            folder=simsdir)
+
+param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
+param$visitors$Sp1$sds<-rep(3,8)
+param$residents$Sp1$means<-c(20,30,40,40,40,40,40,40)
+param$residents$Sp1$sds<-rep(3,8)
+
 
 setwd(simsdir)
 rangOut<-c(0,0.1,0.2)
 
 listfolders<-paste("out_",rangOut,sep = "")
 
-lapply(listfolders,dir.create)
+currFolders<-lapply(listfolders,dir.exists)
+
+if(sum(currFolders>0)){
+  warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
+  cbind(listfolders,currFolders)
+  ans<-readline("Want to continue?")
+  if(substr(ans, 1, 1) == "y"){
+    lapply(listfolders,dir.create)
+  }
+}
+else{
+  lapply(listfolders,dir.create)
+}
 
 for (i in 1:3) {
   param$outbr <-rangOut[i]
-  param$folder<-paste(basefolder,listfolders[i],'\\',sep='')
+  param$folder<-paste(simsdir,listfolders[i],'\\',sep='')
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
-  write(outParam,paste(simsdir,"\\",listfolders[i],"\\parameters.json",sep=""))
+  if(file.exists(fileName))
+  {
+    currFile<-fromJSON(fileName)
+    if(currFile!=param)
+    {
+      warning("You are erasing old files!! n\ Check first!!!")
+      currFile
+      if(readline("Want to continue?")){
+        write(outParam,paste(simsdir,listfolders[i],fileName,sep="\\"))
+      }
+    }
+  }
+  else
+  {
+    write(outParam,paste(simsdir,listfolders[i],fileName,sep="\\"))
+  }
 }
 
 

@@ -502,11 +502,11 @@ void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, doub
 	}
 }
 
-class StatPosTyp1																								// Agent that estimates state-action and uses value for every desicion
+class FIATyp1																								// Agent that estimates state-action and uses value for every desicion
 	:public agent
 {
 public:
-	StatPosTyp1(double alphaI, double gammaI, double tauI, double netaI)
+	FIATyp1(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI, netaI)
 		{
 			numEst = 44;
@@ -545,10 +545,10 @@ public:
 
 
 
-class StatPosTyp2 :public agent																					// Agents that estimates state-actions and only uses value to descriminate between clients
+class FIATyp2 :public agent																					// Agents that estimates state-actions and only uses value to descriminate between clients
 {
 public:
-	StatPosTyp2(double alphaI, double gammaI, double tauI, double netaI)
+	FIATyp2(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI,netaI)
 	{
 		numEst = 44;
@@ -599,10 +599,10 @@ public:
 
 
 
-class ActPosTy1 :public agent																					// Agents that estimates actions and uses value for every desicion
+class PIATy1 :public agent																					// Agents that estimates actions and uses value for every desicion
 {
 public:
-	ActPosTy1(double alphaI, double gammaI, double tauI, double netaI)
+	PIATy1(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI, netaI)
 	{
 		numEst = 11;
@@ -627,10 +627,10 @@ public:
 	}
 };
 
-class ActPosTy2 :public agent																					// Agents that estimates actions and only uses value to descriminate between clients
+class PIATy2 :public agent																					// Agents that estimates actions and only uses value to descriminate between clients
 {
 public:
-	ActPosTy2(double alphaI, double gammaI, double tauI, double netaI)
+	PIATy2(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI,netaI)
 	{
 		numEst = 11;

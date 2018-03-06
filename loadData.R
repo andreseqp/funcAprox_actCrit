@@ -6,16 +6,24 @@ genDir<-"D:\\quinonesa\\Simulation\\functionAprox\\"
 
 setwd(genDir)
 
-listAgen<-list.files(recursive = TRUE)
+listgen<-list.files(recursive = TRUE)
 
-listTrain<-grep('IndTrain',listAgen,value = TRUE)
+
 
 rawdata<-do.call(rbind,lapply(listTrain, fread))
 
-filtList<-function(list,alpha,gamma,tau,neta,outbr)
+getFilelist<-function(folder,agent,listparam,values)
 {
-  gamma<-c(0,0.5)
-  gammaList<-lapply(gamma, paste,"gamma",sep="")
+  if(length(listparam)!=length(values)){
+    warning("Parameter list and values don't match")
+  }
+  else{
+  listRaw<-list.files(folder,recursive = TRUE)
+  listAgent<-grep(agent,listRaw,value = TRUE)
+  regExpList<-paste0(listparam,values,"_",sep="")
+  finalList<-do.call(c,lapply(regExpList,grep,listAgent,value=TRUE))
+  return(finalList)
+  }
 }
 
 with(rawdata[(Gamma==0.8 & Tau==10) & Training==1],{

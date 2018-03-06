@@ -106,7 +106,7 @@ std::string douts(double j)			// turns double into string
 string create_filename(std::string filename, agent &individual, nlohmann::json param)
 {
 	// name the file with the parameter specifications
-	filename.append("_alph");
+	filename.append("alph");
 	filename.append(douts(individual.getLearnPar(alphaPar)));
 	filename.append("_gamma");
 	filename.append(douts(individual.getLearnPar(gammaPar)));
@@ -135,6 +135,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param
 	if(DP)
 	{
 		folder = "\\DP";
+		folder.append("_");	
 	}
 	else
 	{
@@ -222,9 +223,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
-	double VisReward = ResReward;
+	double VisReward = param["VisReward"];
 	double ResProb = param["ResProb"];
-	double VisProb = ResProb;
+	double VisProb = param["VisProb"];
 	double ResProbLeav = param["ResProbLeav"];
 	double VisProbLeav = param["VisProbLeav"];
 	double negativeRew = param["negativeRew"];
@@ -322,8 +323,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			{
 				ofstream printTest;
 				ofstream DPprint;
-				learners[0] = new StatPosTyp1(alphaT, *itg, *itt, *itn);
-				learners[1] = new ActPosTy1(alphaT, *itg, *itt, *itn);
+				learners[0] = new FIATyp2(alphaT, *itg, *itt, *itn);
+				learners[1] = new PIATy2(alphaT, *itg, *itt, *itn);
 				for (int k = 0; k < numlearn; ++k)  //numlearn
 				{
 					initializeIndFile(printTest, *learners[k], param,0);
