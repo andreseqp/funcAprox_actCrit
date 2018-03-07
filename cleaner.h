@@ -502,11 +502,11 @@ void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, doub
 	}
 }
 
-class FIATyp1																								// Agent that estimates state-action and uses value for every desicion
+class FIATy1																								// Agent that estimates state-action and uses value for every desicion
 	:public agent
 {
 public:
-	FIATyp1(double alphaI, double gammaI, double tauI, double netaI)
+	FIATy1(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI, netaI)
 		{
 			numEst = 44;
@@ -545,10 +545,10 @@ public:
 
 
 
-class FIATyp2 :public agent																					// Agents that estimates state-actions and only uses value to descriminate between clients
+class FIATy2 :public agent																					// Agents that estimates state-actions and only uses value to descriminate between clients
 {
 public:
-	FIATyp2(double alphaI, double gammaI, double tauI, double netaI)
+	FIATy2(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI,netaI)
 	{
 		numEst = 44;

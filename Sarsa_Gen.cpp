@@ -218,6 +218,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	ifstream input(argv[1]);
 	//ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
+	//ifstream input("D:\\quinonesa\\Simulation\\functionAprox\\out_0\\parameters.json");
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
@@ -323,7 +324,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			{
 				ofstream printTest;
 				ofstream DPprint;
-				learners[0] = new FIATyp2(alphaT, *itg, *itt, *itn);
+				learners[0] = new FIATy2(alphaT, *itg, *itt, *itn);
 				learners[1] = new PIATy2(alphaT, *itg, *itt, *itn);
 				for (int k = 0; k < numlearn; ++k)  //numlearn
 				{
