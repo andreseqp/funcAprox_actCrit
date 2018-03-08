@@ -223,8 +223,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	json param = nlohmann::json::parse(input);
 
 	int const totRounds = param["totRounds"];
-	double ResReward = param["ResReward"];
-	double VisReward = param["VisReward"];
+	ResReward = param["ResReward"];
+	VisReward = param["VisReward"];
 	double ResProb = param["ResProb"];
 	double VisProb = param["VisProb"];
 	double ResProbLeav = param["ResProbLeav"];

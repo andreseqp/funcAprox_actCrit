@@ -314,7 +314,8 @@ void agent::printIndData(ofstream &learnSeries, int &seed,double &outbr)
 	//cout << endl;
 }
 
-void agent::printDPData(ofstream &DPdata, double &outbr, int &time)								// Print the outcome of the DP estimation
+void agent::printDPData(ofstream &DPdata, double &outbr, int &time)					
+// Print the outcome of the DP estimation
 {
 	DPdata << time << '\t';
 	DPdata << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
@@ -330,7 +331,8 @@ void agent::printDPData(ofstream &DPdata, double &outbr, int &time)								// Pr
 
 double agent::softMax(double &value1, double &value2)
 {
-	double prob1 = (exp(value1 / tau)) / (exp(value1 / tau) + exp(value2 / tau));						// Calculate probability of chosing option 1
+	double prob1 = (exp(value1 / tau)) / (exp(value1 / tau) + exp(value2 / tau));			
+	// Calculate probability of chosing option 1
 	return(prob1);
 }
 
@@ -354,14 +356,17 @@ double agent::valueClient(int clientid, int &countFeat)
 int agent::mapOptions(client cleanOptions[], int choice)
 {
 	int stateAction;
-	if (cleanOptions[0].mytype == absence || cleanOptions[1].mytype == absence)									// One of the options is empty
+	if (cleanOptions[0].mytype == absence || cleanOptions[1].mytype == absence)							
+	// One of the options is empty
 	{
-		if (cleanOptions[0].mytype == resident || cleanOptions[1].mytype == resident)							// the other one is a resident
+		if (cleanOptions[0].mytype == resident || cleanOptions[1].mytype == resident)							
+		// the other one is a resident
 		{
 			if (cleanOptions[choice].mytype == resident) { stateAction = 4; } // State = R0 , action = R		
 			else { stateAction = 5; }					// State = R0 , action = 0		
 		}
-		else if (cleanOptions[0].mytype == visitor || cleanOptions[1].mytype == visitor)						// the other one is a resident
+		else if (cleanOptions[0].mytype == visitor || cleanOptions[1].mytype == visitor)						
+		// the other one is a resident
 		{
 			if (cleanOptions[choice].mytype == visitor) { stateAction = 2; } // State = V0 , action = V
 			else { stateAction = 3; }				   // State = V0 , action = 0
