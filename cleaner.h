@@ -276,12 +276,16 @@ void agent::updateClient(int &countWeights, int clientId)																				// 
 	{
 		if (i<cleanOptionsT[clientId].numFeat[0])
 		{
-			featWeights[countWeights] += alpha*(currentReward*(1-neta) + negReward*neta + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featQuant[i];
+			featWeights[countWeights] += alpha*(currentReward*(1-neta) 
+										+ negReward*neta + gamma*valuesT1[choiceT1] 
+										- valuesT[choiceT])*cleanOptionsT[clientId].featQuant[i];
 			++countWeights;
 		}
 		else
 		{
-			featWeights[countWeights] += boolExtUpdate*alpha*(currentReward*(1 - neta) + negReward*neta + gamma*valuesT1[choiceT1] - valuesT[choiceT])*cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
+			featWeights[countWeights] += boolExtUpdate*alpha*(currentReward*(1 - neta) 
+										+ negReward*neta + gamma*valuesT1[choiceT1] 
+										- valuesT[choiceT])*cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
 			++countWeights;
 		}
 
