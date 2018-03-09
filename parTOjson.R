@@ -2,8 +2,6 @@
 
 library("jsonlite")
 
-
-
 codedir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
 
 simsdir<-"D:\\quinonesa\\Simulation\\functionAprox"

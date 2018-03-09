@@ -46,9 +46,9 @@ loadRawData<-function(folder,agent,listparam,values)
   return(DT)
 }
 
-loadInterData<-function(folder,agent,listparam,values)
-{
-  fullList<-getFilelist(folder,listparam,values)
-  return(do.call(rbind,lapply(fullList[[agent]],fread)))
-}
+# loadInterData<-function(folder,agent,listparam,values)
+# {
+#   fullList<-getFilelist(folder,listparam,values)
+#   return(do.call(rbind,lapply(fullList[[agent]],fread)))
+# }
 
