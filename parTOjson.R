@@ -14,15 +14,16 @@ test<-fromJSON(paste(codedir,"\\test.json",sep=""))
 param<-list(totRounds=80000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,
-            alphaT=0.00001,printGen=100,seed=1, gammaRange=c(0,0.5,0.8),
+            alphaT=0.00001,printGen=1,seed=1, gammaRange=c(0,0.5,0.8),
             tauRange=c(2,5,10),netaRange=c(0,0.5),mins=c(10,10),
             folder=simsdir)
 
 param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
 param$visitors$Sp1$sds<-rep(3,8)
+param$visitors$Sp1$probs<-rep(1,3)
 param$residents$Sp1$means<-c(20,30,40,40,40,40,40,40)
 param$residents$Sp1$sds<-rep(3,8)
-
+param$residents$Sp1$probs<-c(0,1,1)
 
 setwd(simsdir)
 rangOut<-c(0,0.1,0.2)

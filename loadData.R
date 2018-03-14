@@ -1,9 +1,10 @@
 # ------------------------ Load data ------------------------------------------#
 
 library("data.table")
+library("jsonlite")
 
 
-getFilelist<-function(folder,listparam,values)
+getFilelist<-function(folder,listparam=NULL,values=NULL)
 {
   posAgen<-c("PIA","FIA","DP")
   listRaw<-list.files(folder,recursive = TRUE)
@@ -45,6 +46,56 @@ loadRawData<-function(folder,agent,listparam,values)
   
   return(DT)
 }
+
+
+getParam<-function(folder,agent,listparam,values)
+{
+  setwd(folder)
+  irrelPar<-c("Gamma","Tau","Neta")
+  listRaw<-list.files(folder,recursive = TRUE)
+  jsonsList<-grep(".json",listRaw,value = TRUE)
+  indRelPar<-do.call(c,lapply(irrelPar,grep,listparam,invert=TRUE))
+  listparam<-listparam[indRelPar]
+  values<-values[indRelPar]
+  if(length(listparam)!=length(values)){
+    warning("Parameter list and values don't match",immediate. = TRUE)
+  }
+  else{
+    if(is.null(listparam)){
+      finalList<-jsonsList
+    }
+    else{
+      regExpList<-paste0(listparam,values,"_",sep="")
+      finalList<-do.call(c,lapply(regExpList,grep,jsonsList,value=TRUE))
+    }
+  }
+  jsons<-do.call(list,lapply(finalList,fromJSON))
+  return(jsons)
+}
+
+file2timeInter<-function(filename,interV)
+{
+  tmp<-fread(filename)
+  tmp$fullRVoptions<-(tmp$Type_choice==1 & tmp$Type_discard==0) | 
+    (tmp$Type_choice==0 & tmp$Type_discard==1)
+  tmptimeInter<-
+    tmp[fullRVoptions==TRUE,as.list(
+      unlist(lapply(
+        .SD,function(x) list(mean = mean(x),sd = sd(x))))),
+      by=.(Interv=floor(Age/interV),Training,Age,Alpha,Gamma,Tau,Neta,Outbr),
+                    .SDcols=c("Type_choice",
+                              grep("[[:digit:]]",names(tmp),value=TRUE))]
+  return(tmptimeInter)
+}
+
+tmptimeInter<-
+  tmp[fullRVoptions==TRUE,as.list(
+    unlist(lapply(
+      .SD,function(x) list(mean = mean(x),sd = sd(x))))),
+    by=.(Interv=floor(Age/1001),Training,Age,Alpha,Gamma,Tau,Neta,Outbr),
+    .SDcols=c("Type_choice",grep("[[:digit:]]",names(tmp),value = TRUE))]
+
+filename<-getFilelist(genDir)$FIA[1]
 
 # loadInterData<-function(folder,agent,listparam,values)
 # {
