@@ -11,7 +11,7 @@ fileName<-"parameters.json"
 
 test<-fromJSON(paste(codedir,"\\test.json",sep=""))
 
-param<-list(totRounds=80000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
+param<-list(totRounds=60000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,
             alphaT=0.00001,printGen=1,seed=1, gammaRange=c(0,0.5,0.8),

@@ -2,26 +2,40 @@
 
 library("data.table")
 library("jsonlite")
+library("rlist")
 
 
-getFilelist<-function(folder,listparam=NULL,values=NULL)
-{
+getFilelist<-# reads de list of files and filters it according to a list of parameters
+             # and values of interest
+  function(folder, # folder where the files are
+           listparam=NULL, # list strings providing the parameters 
+                           #of interest
+           values=NULL # list of values matching the list in 
+                      # listparam
+           ){
   posAgen<-c("PIA","FIA","DP")
   listRaw<-list.files(folder,recursive = TRUE)
   fullList<-vector("list",3)
   names(fullList)<-posAgen
   if(length(listparam)!=length(values)){
+    # parameter and value lists must be the same length
     warning("Parameter list and values don't match",immediate. = TRUE)
   }
   else{
       if(is.null(listparam)){
+        # if there is no list, use all the data
         paramList<-listRaw
       }
     else{
+      # if there is list, filter the data
       regExpList<-paste0(listparam,values,"_",sep="")
-      paramList<-do.call(c,lapply(regExpList,grep,listRaw,value=TRUE))
+      for (expr in regExpList){
+        listRaw<-grep(expr,listRaw,value = TRUE)
+      }
+      paramList<-listRaw
     }
       for(agent in posAgen){
+        # Create a list with the lists separated by type of agents
         listAgent<-grep(agent,paramList,value = TRUE)
         fullList[[agent]]<-listAgent
       }
@@ -48,13 +62,16 @@ loadRawData<-function(folder,agent,listparam,values)
 }
 
 
-getParam<-function(folder,agent,listparam,values)
+getParam<-function(folder,agent,listparam=NULL,values=NULL)
 {
   setwd(folder)
   irrelPar<-c("Gamma","Tau","Neta")
   listRaw<-list.files(folder,recursive = TRUE)
   jsonsList<-grep(".json",listRaw,value = TRUE)
-  indRelPar<-do.call(c,lapply(irrelPar,grep,listparam,invert=TRUE))
+  indRelPar<-0
+  for(param in irrelPar){
+      indRelPar<-grep(param,listparam,invert = TRUE)
+  }
   listparam<-listparam[indRelPar]
   values<-values[indRelPar]
   if(length(listparam)!=length(values)){
@@ -66,36 +83,45 @@ getParam<-function(folder,agent,listparam,values)
     }
     else{
       regExpList<-paste0(listparam,values,"_",sep="")
-      finalList<-do.call(c,lapply(regExpList,grep,jsonsList,value=TRUE))
+      for (expr in regExpList){
+        jsonsList<-grep(expr,jsonsList,value = TRUE)
+      }
     }
   }
-  jsons<-do.call(list,lapply(finalList,fromJSON))
+  jsons<-do.call(list,lapply(jsonsList,fromJSON))
   return(jsons)
 }
 
-file2timeInter<-function(filename,interV)
+file2timeInter<-function(filename,interV,maxAge=-2)
 {
-  tmp<-fread(filename)
+  tmp<-fread(filename,nrows = maxAge+1)
   tmp$fullRVoptions<-(tmp$Type_choice==1 & tmp$Type_discard==0) | 
     (tmp$Type_choice==0 & tmp$Type_discard==1)
   tmptimeInter<-
     tmp[fullRVoptions==TRUE,as.list(
       unlist(lapply(
         .SD,function(x) list(mean = mean(x),sd = sd(x))))),
-      by=.(Interv=floor(Age/interV),Training,Age,Alpha,Gamma,Tau,Neta,Outbr),
+      by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr),
                     .SDcols=c("Type_choice",
                               grep("[[:digit:]]",names(tmp),value=TRUE))]
   return(tmptimeInter)
 }
 
-tmptimeInter<-
-  tmp[fullRVoptions==TRUE,as.list(
-    unlist(lapply(
-      .SD,function(x) list(mean = mean(x),sd = sd(x))))),
-    by=.(Interv=floor(Age/1001),Training,Age,Alpha,Gamma,Tau,Neta,Outbr),
-    .SDcols=c("Type_choice",grep("[[:digit:]]",names(tmp),value = TRUE))]
 
-filename<-getFilelist(genDir)$FIA[1]
+file2lastDP<-function(filename)
+{
+  tmp<-fread(filename)
+  tmpProbsDP<-tmp[Time==max(Time),
+                  .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
+                  by=.(Alpha,Gamma,Tau,Neta,Outbr)]
+  return(tmpProbsDP)
+}
+
+
+soft_max<-function(x,y,t){
+  return(exp(x/t)/(exp(x/t)+exp(y/t)))
+}
+
 
 # loadInterData<-function(folder,agent,listparam,values)
 # {
