@@ -6,6 +6,8 @@ codedir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
 
 simsdir<-"D:\\quinonesa\\Simulation\\functionAprox"
 
+exedir<-"D:/quinonesa/Dropbox/Neuchatel/Learning_models_C++/FunctionAproxSarsa/Release/./FunctionAproxSarsa.exe"
+
 fileName<-"parameters.json"
 
 
@@ -26,25 +28,33 @@ param$residents$Sp1$sds<-rep(3,8)
 param$residents$Sp1$probs<-c(0,1,1)
 
 setwd(simsdir)
-rangOut<-c(0,0.1,0.2)
 
-listfolders<-paste("out_",rangOut,sep = "")
+rang<-c(1,3,5)
 
-currFolders<-lapply(listfolders,dir.exists)
 
-if(sum(currFolders>0)){
-  warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
-  cbind(listfolders,currFolders)
-  ans<-readline("Want to continue?")
-  if(substr(ans, 1, 1) == "y"){
+
+check_create.dir<-function(folder,param,values)
+{
+  listfolders<-paste(param,values,sep = "")  
+  currFolders<-lapply(listfolders,dir.exists)
+  if(sum(currFolders>0)){
+    warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
+    cbind(listfolders,currFolders)
+    ans<-readline("Want to continue?")
+    if(substr(ans, 1, 1) == "y"){
+      lapply(listfolders,dir.create)
+    }
+  }else{
     lapply(listfolders,dir.create)
   }
-}else{
-  lapply(listfolders,dir.create)
 }
 
+
+
+
 for (i in 1:3) {
-  param$outbr <-rangOut[i]
+  param$visitors$Sp1$sds <-rep(rang[i],8)
+  param$residents$Sp1$sds <-rep(rang[i],8)
   param$folder<-paste(simsdir,'\\',listfolders[i],'\\',sep='')
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = '')))
@@ -67,6 +77,14 @@ for (i in 1:3) {
   {
     write(outParam,paste(simsdir,listfolders[i],fileName,sep="\\"))
   }
+  system(paste(exedir,
+    gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
+    ,sep = " "))
 }
+gsub(pattern = "\\",replacement = "/",simsdir,fixed=TRUE)
+
+system(paste(exedir,
+             gsub("\\","/",paste(simsdir,listfolders[1],fileName,sep="\\"),fixed=TRUE)
+             ,sep = " "))
 
 

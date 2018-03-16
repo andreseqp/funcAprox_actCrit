@@ -10,6 +10,7 @@ source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(scriptDir,"aesth_par.R",sep=""))
 source(paste(scriptDir,"loadData.R",sep = ""))
 library('plotrix')
+library('lme4')
 
 
 # Load data ------------------------------------------------------------
@@ -145,7 +146,7 @@ PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Type_choice.mean),
                            lowIQR=fivenum(Type_choice.mean)[2])
                         ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
 
-par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s')
+par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
 with(FIAIntstats,{
   plotCI(x=Interv,y=meanProb,
          ui = upIQR,li=lowIQR,
@@ -155,8 +156,10 @@ with(FIAIntstats,{
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
 })
 with(DPdataProb,  
-     {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),each=3),3)),
-               y=t(matrix(rep(probRV.V,2),3)),lwd=2,lty = "dashed",
+     {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
+                                each=length(RV.V)),length(RV.V))),
+               y=t(matrix(rep(probRV.V,2),length(RV.V))),
+               lwd=2,lty = "dashed",
                col=colboxes[match(Gamma,unique(Gamma))])})
 
 par(plt=posPlot(numplotx = 2,idplotx = 2)+c(-0.05,-0.05,0,0),
@@ -175,5 +178,45 @@ with(PIAIntstats,{
 # Try to understand the failures --------------------------------------------------------
 
 tmp<-FIAraw[option=='RV'& Age>0.5*max(Age)]
+
+tmp[,':='(length.diff=Length_choice-Length_discard,
+          height.diff=Height_choice-Height_discard,
+          redMain.diff=redMain_choice-redMain_discard)]
+
+names(tmp)
+
+npx<-3
+
+par(plt=posPlot(numplotx = npx,idplotx = 1)-c(0.05,0.05,0,0))
+plot(Type_choice~length.diff,data=tmp)
+lines(x = rep(0,2),y=c(0,1),col='grey')
+
+par(plt=posPlot(numplotx = npx,idplotx = 2)-c(0.05,0.05,0,0),new=TRUE)
+plot(Type_choice~height.diff,data=tmp,yaxt='n',ylab='')
+lines(x = rep(0,2),y=c(0,1),col='grey')
+
+par(plt=posPlot(numplotx = npx,idplotx = 3)-c(0.05,0.05,0,0),new=TRUE)
+plot(Type_choice~redMain.diff,data=tmp,yaxt='n',ylab='')
+lines(x = rep(0,2),y=c(0,1),col='grey')
+
+Heig.mod<-glm(Type_choice~length.diff+height.diff+redMain.diff,
+              family = binomial,data = tmp)
+summary(Heig.mod)
+
+Heig.mod.int<-glm(Type_choice~length.diff*height.diff*redMain.diff,
+              family = binomial,data = tmp)
+summary(Heig.mod.int)
+
+Heig.mod.length<-glm(Type_choice~Length_1_0+Length_1_1+Length_2_0+Length_2_1,
+              family = binomial,data = tmp)
+summary(Heig.mod.length)
+
+Heig.mod.height<-glm(Type_choice~Height_1_0+Height_1_1+Height_2_0+Height_2_1,
+                     family = binomial,data = tmp)
+summary(Heig.mod.height)
+
+
+
+
 
 

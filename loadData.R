@@ -65,15 +65,15 @@ loadRawData<-function(folder,agent,listparam,values)
 getParam<-function(folder,agent,listparam=NULL,values=NULL)
 {
   setwd(folder)
-  irrelPar<-c("Gamma","Tau","Neta")
+  irrelPar<-c("gamma","tau","neta")
   listRaw<-list.files(folder,recursive = TRUE)
   jsonsList<-grep(".json",listRaw,value = TRUE)
-  indRelPar<-0
+  indRelPar<-seq(length(listparam))
   for(param in irrelPar){
       indRelPar<-grep(param,listparam,invert = TRUE)
+      listparam<-listparam[indRelPar]
+      values<-values[indRelPar]
   }
-  listparam<-listparam[indRelPar]
-  values<-values[indRelPar]
   if(length(listparam)!=length(values)){
     warning("Parameter list and values don't match",immediate. = TRUE)
   }
@@ -82,7 +82,7 @@ getParam<-function(folder,agent,listparam=NULL,values=NULL)
       finalList<-jsonsList
     }
     else{
-      regExpList<-paste0(listparam,values,"_",sep="")
+      regExpList<-paste(listparam,"_",values,"/",sep="")
       for (expr in regExpList){
         jsonsList<-grep(expr,jsonsList,value = TRUE)
       }
