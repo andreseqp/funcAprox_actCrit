@@ -4,20 +4,20 @@ library("jsonlite")
 
 codedir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
 
-simsdir<-"D:\\quinonesa\\Simulation\\functionAprox"
+simsdir<-"S:/quinonesa/Simulations/functionAprox/General"
 
-exedir<-"D:/quinonesa/Dropbox/Neuchatel/Learning_models_C++/FunctionAproxSarsa/Release/./FunctionAproxSarsa.exe"
+exedir<-paste(codedir,'/./FunctionAproxSarsa.exe',sep='')
 
 fileName<-"parameters.json"
 
 
-test<-fromJSON(paste(codedir,"\\test.json",sep=""))
+#test<-fromJSON(paste(codedir,"\\test.json",sep=""))
 
 param<-list(totRounds=60000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,
-            alphaT=0.00001,printGen=1,seed=1, gammaRange=c(0,0.5,0.8),
-            tauRange=c(2,5,10),netaRange=c(0,0.5),mins=c(10,10),
+            alphaT=0.00001,printGen=1,seed=1, gammaRange=c(0,0.8),
+            tauRange=c(5,10),netaRange=c(0,0.5),mins=c(10,10),
             folder=simsdir)
 
 param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
@@ -33,29 +33,33 @@ rang<-c(1,3,5)
 
 
 
-check_create.dir<-function(folder,param,values)
-{
+check_create.dir<-function(folder,param,values){
   listfolders<-paste(param,values,sep = "")  
   currFolders<-lapply(listfolders,dir.exists)
   if(sum(currFolders>0)){
     warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
-    cbind(listfolders,currFolders)
+    print(cbind(listfolders,currFolders))
     ans<-readline("Want to continue?")
     if(substr(ans, 1, 1) == "y"){
       lapply(listfolders,dir.create)
+      return(listfolders)
+    }
+    else{
+      return(listfolders)
     }
   }else{
     lapply(listfolders,dir.create)
+    return(listfolders)
   }
 }
 
 
-
+listfolders<-check_create.dir(simsdir,rep("sds",3),rang)
 
 for (i in 1:3) {
   param$visitors$Sp1$sds <-rep(rang[i],8)
   param$residents$Sp1$sds <-rep(rang[i],8)
-  param$folder<-paste(simsdir,'\\',listfolders[i],'\\',sep='')
+  param$folder<-paste(simsdir,'/',listfolders[i],'/',sep='')
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = '')))
   {
@@ -77,14 +81,14 @@ for (i in 1:3) {
   {
     write(outParam,paste(simsdir,listfolders[i],fileName,sep="\\"))
   }
-  system(paste(exedir,
-    gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
-    ,sep = " "))
+  # system(paste(exedir,
+  #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
+  #   ,sep = " "))
 }
 gsub(pattern = "\\",replacement = "/",simsdir,fixed=TRUE)
 
-system(paste(exedir,
-             gsub("\\","/",paste(simsdir,listfolders[1],fileName,sep="\\"),fixed=TRUE)
-             ,sep = " "))
+# system(paste(exedir,
+#              gsub("\\","/",paste(simsdir,listfolders[1],fileName,sep="\\"),fixed=TRUE)
+#              ,sep = " "))
 
 

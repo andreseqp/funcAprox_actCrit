@@ -1,7 +1,7 @@
 # ------------------ Exploration ------------------------ #
 
 # Directories --------------------------------------------------------------
-genDir<-"D:\\quinonesa\\Simulation\\functionAprox\\"
+genDir<-"S:/quinonesa/Simulations/functionAprox/General/"
 scriptDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
 
 
@@ -131,47 +131,6 @@ with(FIAraw[((Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0.2))&option=='RV'],{
        labels = bquote(eta==.(unique(Neta))))
   legend('topleft',col =c(1,2,3),legend = c('resident','visitor','absence'),pch =20,
          ncol = 3,cex = 0.8)
-})
-
-
-# Plot the dynamics of VR choice -----------------------------------------------------------
-
-FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Type_choice.mean),
-                           upIQR=fivenum(Type_choice.mean)[4],
-                           lowIQR=fivenum(Type_choice.mean)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
-
-PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Type_choice.mean),
-                           upIQR=fivenum(Type_choice.mean)[4],
-                           lowIQR=fivenum(Type_choice.mean)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
-
-par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
-with(FIAIntstats,{
-  plotCI(x=Interv,y=meanProb,
-         ui = upIQR,li=lowIQR,
-         pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
-         sfrac=0.002,cex.axis=1.3)
-  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
-})
-with(DPdataProb,  
-     {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
-                                each=length(RV.V)),length(RV.V))),
-               y=t(matrix(rep(probRV.V,2),length(RV.V))),
-               lwd=2,lty = "dashed",
-               col=colboxes[match(Gamma,unique(Gamma))])})
-
-par(plt=posPlot(numplotx = 2,idplotx = 2)+c(-0.05,-0.05,0,0),
-    new=TRUE,yaxt='s',xpd=TRUE)
-with(PIAIntstats,{
-  plotCI(x=Interv,y=meanProb,
-         ui = upIQR,li=lowIQR,
-         pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
-         sfrac=0.002,cex.axis=1.3,yaxt='n')
-  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
-  axis(side=4,cex.axis=1.3)
 })
 
 
