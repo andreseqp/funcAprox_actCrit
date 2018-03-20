@@ -2,9 +2,9 @@
 
 library("jsonlite")
 
-codedir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
+projDir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
 
-simsdir<-"S:/quinonesa/Simulations/functionAprox/General"
+simsDir<-"S:/quinonesa/Simulations/functionAprox/General"
 
 exedir<-paste(codedir,'/./FunctionAproxSarsa.exe',sep='')
 

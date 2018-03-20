@@ -1,11 +1,12 @@
 # --------------------------------- Time intervals -------------------------------------------------#
 
 projDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
+simsDir<-"s:/quinonesa/Simulations/functionAprox/General"
 
 # libraries ---------------------------------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
-source(paste(scriptDir,"aesth_par.R",sep=""))
-source(paste(scriptDir,"loadData.R",sep = ""))
+source(paste(projDir,"aesth_par.R",sep=""))
+source(paste(projDir,"loadData.R",sep = ""))
 
 
 # Load Data ---------------------------------------------------------------------------------------
@@ -13,9 +14,9 @@ source(paste(scriptDir,"loadData.R",sep = ""))
 
 # Define data to be loaded 
 
-listPar<-c("gamma","tau","neta","outb")
-listVal<-c(0.8,10,0,0)
-param<-getParam(genDir,listparam = listPar,values = listVal)
+listPar<-c("sds","sds","gamma")
+listVal<-c(1,3,0.8)
+param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 # Load interval data for FIA from the raw data
 # FIAtimeInt<-do.call(
@@ -25,9 +26,12 @@ param<-getParam(genDir,listparam = listPar,values = listVal)
 
 # Load FIA data from processed file
 
+getFilelist(simsDir,listPar,listVal)$FIA
+
 FIAtimeInt<-do.call(
   rbind,lapply(getFilelist(genDir,listPar,listVal)$FIA,fread))
 
+getFilelist(genDir,listPar,listVal)$FIA
 
 # Load interval data for PIA from the raw data
 # PIAtimeInt<-do.call(

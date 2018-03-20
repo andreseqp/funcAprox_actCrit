@@ -25,12 +25,14 @@ getFilelist<-# reads de list of files and filters it according to a list of para
       if(is.null(listparam)){
         # if there is no list, use all the data
         paramList<-listRaw
-      }
+  }
     else{
       # if there is list, filter the data
-      regExpList<-paste0(listparam,values,"_",sep="")
-      for (expr in regExpList){
-        listRaw<-grep(expr,listRaw,value = TRUE)
+      #regExpList<-paste0(listparam,values,"_",sep="")
+      for (param in unique(listparam)){
+        valsparam<-values[grep(param,listparam)]
+        listRaw<-do.call(list.append,lapply(paste(param,valsparam,"_",sep=""),
+                                           grep,x=listRaw,value=TRUE))
       }
       paramList<-listRaw
     }
@@ -42,6 +44,9 @@ getFilelist<-# reads de list of files and filters it according to a list of para
       return(fullList)
     }
 }
+
+
+
 
 loadRawData<-function(folder,agent,listparam,values)
 {
