@@ -87,9 +87,10 @@ getParam<-function(folder,agent,listparam=NULL,values=NULL)
       finalList<-jsonsList
     }
     else{
-      regExpList<-paste(listparam,"_",values,"/",sep="")
-      for (expr in regExpList){
-        jsonsList<-grep(expr,jsonsList,value = TRUE)
+      for (param in unique(listparam)){
+        valsparam<-values[grep(param,listparam)]
+        jsonsList<-do.call(list.append,lapply(paste(param,valsparam,"_",sep=""),
+                                            grep,x=jsonsList,value=TRUE))
       }
     }
   }
@@ -99,6 +100,9 @@ getParam<-function(folder,agent,listparam=NULL,values=NULL)
 
 file2timeInter<-function(filename,interV,maxAge=-2)
 {
+  extPar<-strsplit(filename,split ="_/")[[1]][1]
+  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
+  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   tmp<-fread(filename,nrows = maxAge+1)
   tmp$fullRVoptions<-(tmp$Type_choice==1 & tmp$Type_discard==0) | 
     (tmp$Type_choice==0 & tmp$Type_discard==1)
@@ -109,16 +113,26 @@ file2timeInter<-function(filename,interV,maxAge=-2)
       by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr),
                     .SDcols=c("Type_choice",
                               grep("[[:digit:]]",names(tmp),value=TRUE))]
+  if(length(extPar)>0){
+    tmptimeInter[,eval(extPar):=parVal]
+  }
+  
   return(tmptimeInter)
 }
 
 
 file2lastDP<-function(filename)
 {
+  extPar<-strsplit(filename,split ="_/")[[1]][1]
+  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
+  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   tmp<-fread(filename)
   tmpProbsDP<-tmp[Time==max(Time),
                   .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
                   by=.(Alpha,Gamma,Tau,Neta,Outbr)]
+  if(length(extPar)>0){
+    tmpProbsDP[,eval(extPar):=parVal]
+  }
   return(tmpProbsDP)
 }
 

@@ -7,71 +7,71 @@ simsDir<-"s:/quinonesa/Simulations/functionAprox/General"
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(projDir,"aesth_par.R",sep=""))
 source(paste(projDir,"loadData.R",sep = ""))
-
+library('plotrix')
 
 # Load Data ---------------------------------------------------------------------------------------
 
 
 # Define data to be loaded 
 
-listPar<-c("sds","sds","gamma")
-listVal<-c(1,3,0.8)
+listPar<-c("sds","sds","sds","tau","gamma","neta")
+listVal<-c(1,3,5,10,0.8,0)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 # Load interval data for FIA from the raw data
-# FIAtimeInt<-do.call(
-#   rbind,lapply(
-#     getFilelist(genDir,listPar,listVal)$FIA,
-#     file2timeInter,interV=1001))
+FIAtimeInt<-do.call(
+  rbind,lapply(
+    getFilelist(simsDir,listPar,listVal)$FIA,
+    file2timeInter,interV=1001))
 
 # Load FIA data from processed file
 
-getFilelist(simsDir,listPar,listVal)$FIA
+# getFilelist(simsDir,listPar,listVal)$FIA
 
-FIAtimeInt<-do.call(
-  rbind,lapply(getFilelist(genDir,listPar,listVal)$FIA,fread))
+# FIAtimeInt<-do.call(
+#   rbind,lapply(getFilelist(projDir,listPar,listVal)$FIA,fread))
 
-getFilelist(genDir,listPar,listVal)$FIA
+
 
 # Load interval data for PIA from the raw data
-# PIAtimeInt<-do.call(
-#   rbind,lapply(
-#     getFilelist(genDir,listPar,listVal)$PIA,
-#     file2timeInter,interV=1001))
+PIAtimeInt<-do.call(
+  rbind,lapply(
+    getFilelist(simsDir,listPar,listVal)$PIA,
+    file2timeInter,interV=1001))
 
 # Load PIA data from processed file
 
-PIAtimeInt<-do.call(
-  rbind,lapply(getFilelist(genDir,listPar,listVal)$PIA,fread))
+# PIAtimeInt<-do.call(
+#   rbind,lapply(getFilelist(genDir,listPar,listVal)$PIA,fread))
 
 # Load DP data from the raw data
-# DPdataProb<-do.call(rbind,
-#                     lapply(getFilelist(genDir,listPar,listVal)$DP,
-#                            file2lastDP))
+DPdataProb<-do.call(rbind,
+                    lapply(getFilelist(simsDir,listPar,listVal)$DP,
+                           file2lastDP))
 
 # Load DP data from processed file
 
-DPdataprob<-do.call(
-  rbind,lapply(getFilelist(genDir,listPar,listVal)$DP,fread))
+# DPdataprob<-do.call(
+#   rbind,lapply(getFilelist(genDir,listPar,listVal)$DP,fread))
 
 # Plot the dynamics of VR choice -----------------------------------------------------------
 
 FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Type_choice.mean),
                            upIQR=fivenum(Type_choice.mean)[4],
                            lowIQR=fivenum(Type_choice.mean)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,sds)]
 
 PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Type_choice.mean),
                            upIQR=fivenum(Type_choice.mean)[4],
                            lowIQR=fivenum(Type_choice.mean)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,sds)]
 
 par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
 with(FIAIntstats,{
   plotCI(x=Interv,y=meanProb,
          ui = upIQR,li=lowIQR,
          pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
+         col=colboxes[match(sds,unique(sds))],
          sfrac=0.002,cex.axis=1.3)
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
 })
@@ -80,7 +80,12 @@ with(DPdataProb,
                                 each=length(RV.V)),length(RV.V))),
                y=t(matrix(rep(probRV.V,2),length(RV.V))),
                lwd=2,lty = "dashed",
-               col=colboxes[match(Gamma,unique(Gamma))])})
+               col=colboxes[match(sds,unique(sds))])})
+
+legend('bottomright',
+       legend=unique(FIAIntstats[,sds])[order(unique(FIAIntstats[,sds]))],
+              col=colboxes,pch=15,
+              title=expression(sigma),cex=1.5,ncol=3)
 
 par(plt=posPlot(numplotx = 2,idplotx = 2)+c(-0.05,-0.05,0,0),
     new=TRUE,yaxt='s',xpd=TRUE)
@@ -88,12 +93,14 @@ with(PIAIntstats,{
   plotCI(x=Interv,y=meanProb,
          ui = upIQR,li=lowIQR,
          pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
+         col=colboxes[match(sds,unique(sds))],
          sfrac=0.002,cex.axis=1.3,yaxt='n')
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   axis(side=4,cex.axis=1.3)
 })
 
-  
+diffJsons(param[1],param[2])
+
+
   
   
