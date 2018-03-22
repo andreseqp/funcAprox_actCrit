@@ -88,9 +88,3 @@ gsub(pattern = "\\",replacement = "/",simsdir,fixed=TRUE)
 #              gsub("\\","/",paste(simsdir,listfolders[1],fileName,sep="\\"),fixed=TRUE)
 #              ,sep = " "))
 
-diffJsons<-function(json1,json2){
-  print("JSON.1")
-  print(unlist(json1)[unlist(json1)!=unlist(json2)])
-  print("JSON.2")
-  print(unlist(json2)[unlist(json1)!=unlist(json2)])
-}
