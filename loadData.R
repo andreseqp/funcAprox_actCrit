@@ -34,6 +34,7 @@ getFilelist<-# reads de list of files and filters it according to a list of para
         listRaw<-do.call(list.append,lapply(paste(param,valsparam,"_",sep=""),
                                            grep,x=listRaw,value=TRUE))
       }
+      
       paramList<-listRaw
     }
       for(agent in posAgen){
@@ -141,10 +142,11 @@ soft_max<-function(x,y,t){
   return(exp(x/t)/(exp(x/t)+exp(y/t)))
 }
 
+diffJsons<-function(json1,json2){
+  print("JSON.1")
+  print(unlist(json1)[unlist(json1)!=unlist(json2)])
+  print("JSON.2")
+  print(unlist(json2)[unlist(json1)!=unlist(json2)])
+}
 
-# loadInterData<-function(folder,agent,listparam,values)
-# {
-#   fullList<-getFilelist(folder,listparam,values)
-#   return(do.call(rbind,lapply(fullList[[agent]],fread)))
-# }
 

@@ -2,19 +2,19 @@
 
 # Directories --------------------------------------------------------------
 simsDir<-"s:/quinonesa/Simulations/functionAprox/General/"
-scriptDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
+projDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
 
 
 # libraries ----------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
-source(paste(scriptDir,"loadData.R",sep = ""))
+source(paste(projDir,"loadData.R",sep = ""))
 
 
 # Check if directories exist if they don't create them
 
 list.dirs(simsDir)
 
-list.dirs(scriptDir)
+list.dirs(projDir)
 
 parList<-rep("outb_",3)
 valList<-c(0,0.1,0.2)
