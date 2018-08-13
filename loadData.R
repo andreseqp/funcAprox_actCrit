@@ -103,7 +103,7 @@ file2timeInter<-function(filename,interV,maxAge=-2)
 {
   extPar<-strsplit(filename,split ="_/")[[1]][1]
   parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
-  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
+  extPar<-gsub(parVal,extPar,replacement = '')
   tmp<-fread(filename,nrows = maxAge+1)
   tmp$fullRVoptions<-(tmp$Type_choice==1 & tmp$Type_discard==0) | 
     (tmp$Type_choice==0 & tmp$Type_discard==1)

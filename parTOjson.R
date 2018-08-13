@@ -23,9 +23,11 @@ param<-list(totRounds=60000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
 param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
 param$visitors$Sp1$sds<-rep(3,8)
 param$visitors$Sp1$probs<-rep(1,3)
+param$visitors$Sp1$relAbun=1
 param$residents$Sp1$means<-c(20,30,40,40,40,40,40,40)
 param$residents$Sp1$sds<-rep(3,8)
 param$residents$Sp1$probs<-c(0,1,1)
+param$residents$Sp1$relAbun=1
 
 setwd(simsDir)
 
@@ -52,7 +54,7 @@ check_create.dir<-function(folder,param,values){
 }
 
 
-listfolders<-check_create.dir(simsdir,rep("mHeight",3),rang)
+listfolders<-check_create.dir(simsdir,rep("mHeightC",3),rang)
 
 for (i in 1:3) {
   param$visitors$Sp1$means[1] <-rang[i]

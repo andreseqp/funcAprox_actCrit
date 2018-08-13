@@ -59,52 +59,57 @@ Last edit date:
 using namespace std;
 using json = nlohmann::json;
 
-double visitMeans[8], visitSds[8], visitProbs[3];
-double residMeans[8], residSds[8], residProbs[3];
-double mins[2];
-double ResReward, VisReward;
 
+double mins[2];
 
 // Functions
 
-void draw(client trainingSet[], int rounds, double &probRes, double &probVis)
-{
-	double cumProbs[3] = { probRes, probRes + probVis, 1 };
+rnd::discrete_distribution clientProbs(json param, string clientType) {
+	int numSps = param[clientType].size();
+	rnd::discrete_distribution SpProb(numSps);
+	for (json::iterator itSpClient = param[clientType].begin(); 
+		itSpClient != param[clientType].end(); ++itSpClient) {
+		SpProb[distance(param[clientType].begin(), itSpClient)] = 
+			itSpClient->at("relAbun");
+	}
+	return (SpProb);
+}
+
+void draw(client trainingSet[], json param, 
+	rnd::discrete_distribution visitSpProb,
+	rnd::discrete_distribution residSpProb) {
+	double cumProbs[3] = { param["ResProb"].get<double>(),
+		(param["ResProb"].get<double>() + 	
+			param["VisProb"].get<double>()),	1 };
 	double rndNum;
-	for (int i = 0; i < rounds * 2; i++)
-	{
+	json::iterator itSpsVis = param["visitors"].begin();
+	json::iterator itSpsRes = param["residents"].begin();
+	for (int i = 0; i < param["totRounds"] * 2; i++) {
 		rndNum = rnd::uniform();
-		if (rndNum < cumProbs[0]) 
-		{ 
-			trainingSet[i] = client(resident,residMeans,residSds,mins,residProbs,ResReward); 
+		if (rndNum < cumProbs[0]) {
+			string chosenSp = "Sp";
+			chosenSp.append(itos(residSpProb.sample() + 1));
+			trainingSet[i] = client(resident,param["residents"][chosenSp]["means"],
+				param["residents"][chosenSp]["sds"],
+				mins, param["residents"][chosenSp]["probs"],
+				param["ResReward"].get<double>(),chosenSp);
 		}
-		else if (rndNum < cumProbs[1]) 
-		{ 
-			trainingSet[i] = client(visitor, visitMeans, visitSds, mins, visitProbs, VisReward); 
+		else if (rndNum < cumProbs[1]) { 
+			string chosenSp = "Sp";
+			chosenSp.append(itos(visitSpProb.sample()+1));
+			trainingSet[i] = client(visitor, param["visitors"][chosenSp]["means"],
+				param["visitors"][chosenSp]["sds"],
+				mins, param["visitors"][chosenSp]["probs"],
+				param["ResReward"].get<double>(), chosenSp);
 		}
-		else 
-		{ 
-			trainingSet[i] = client(absence,residMeans,residSds,mins,residProbs,ResReward); 
+		else { 
+			trainingSet[i] = client(); 
 		}
 	}
 }
 
-std::string itos(int j)				// turns int into string
-{
-	std::stringstream s;
-	s << j;
-	return s.str();
-}
-
-std::string douts(double j)			// turns double into string
-{
-	std::stringstream s;
-	s << j;
-	return s.str();
-}
-
-string create_filename(std::string filename, agent &individual, nlohmann::json param)
-{
+string create_filename(std::string filename, agent &individual, 
+	nlohmann::json param) {
 	// name the file with the parameter specifications
 	filename.append("alph");
 	filename.append(douts(individual.getLearnPar(alphaPar)));
@@ -122,8 +127,8 @@ string create_filename(std::string filename, agent &individual, nlohmann::json p
 	return(filename);
 }
 
-void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param, bool DP)
-{
+void initializeIndFile(ofstream &indOutput, agent &learner, 
+	nlohmann::json param, bool DP) {
 	std::string namedir = param["folder"];
 	//"D:\\quinonesa\\Simulation\\functionAprox\\"; 
 	std::string namedirDP = param["folder"];
@@ -132,49 +137,50 @@ void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param
 	// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; 
 	// "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
 	std::string folder;
-	if(DP)
-	{
+	if(DP) {
 		folder = "\\DP";
 		folder.append("_");	
 	}
-	else
-	{
+	else {
 		folder = typeid(learner).name();
 		folder.erase(0, 6).append("_");
 		cout << folder << '\t' << learner.getLearnPar(alphaPar) << '\t';
-		cout << learner.getLearnPar(gammaPar) << '\t' << learner.getLearnPar(tauPar) << '\t';
+		cout << learner.getLearnPar(gammaPar) << '\t';
+		cout << learner.getLearnPar(tauPar) << '\t';
 		cout << learner.getLearnPar(netaPar) << endl;
-
 	}
 	namedir.append(folder);
 	string IndFile = create_filename(namedir, learner, param);
 	indOutput.open(IndFile.c_str());
-	if(DP)
-	{
-		indOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
-		indOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t' << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t' << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
+	if(DP) {
+		indOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t';
+		indOutput << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
+		indOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t'; 
+		indOutput << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t';
+		indOutput << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
 		indOutput << endl;
 	}
-	else
-	{
+	else {
 		indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
 		indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
-		indOutput << "Outbr" << '\t' << "Current.Reward" << '\t' << "Cum.Reward";
-		indOutput << '\t' << "Neg.Reward" << '\t';
-		indOutput << "value_choice" << '\t' << "Type_choice" << '\t' << "Height_choice" << '\t';
-		indOutput << "Length_choice" << '\t' << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
-		indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t' << "greenSec_choice" << '\t';
-		indOutput << "blueSec_choice" << '\t' << "secCol_choice" << '\t' << "strip_choice" << '\t';
-		indOutput << "dots_choice" << '\t' << "value_discard" << '\t' << "Type_discard" << '\t';
-		indOutput << "Height_discard" << '\t' << "Length_discard" << '\t' << "redMain_discard" << '\t';
-		indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t' << "redSec_discard" << '\t';
-		indOutput << "greenSec_discard" << '\t' << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
+		indOutput << "Outbr" << '\t' << "Current.Reward" << '\t';
+		indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
+		indOutput << "value_choice" << '\t' << "Type_choice" << '\t';
+		indOutput << "Height_choice" << '\t' << "Length_choice" << '\t';
+		indOutput << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
+		indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t';
+		indOutput << "greenSec_choice" << '\t' << "blueSec_choice" << '\t';
+		indOutput << "secCol_choice" << '\t' << "strip_choice" << '\t';
+		indOutput << "dots_choice" << '\t' << "value_discard" << '\t';
+		indOutput << "Type_discard" << '\t' << "Height_discard" << '\t';
+		indOutput << "Length_discard" << '\t' << "redMain_discard" << '\t';
+		indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t';
+		indOutput << "redSec_discard" << '\t' << "greenSec_discard" << '\t';
+		indOutput << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
 		indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
 
-		if (learner.numEst > 11)
-		{
-			if (learner.numEst > 23)
-			{
+		if (learner.numEst > 11) {
+			if (learner.numEst > 23) {
 				indOutput << "Height_1_0" << '\t' << "Length_1_0" << '\t' << "redMain_1_0" << '\t';
 				indOutput << "greenMain_1_0" << '\t' << "blueMain_1_0" << '\t' << "redSec_1_0" << '\t';
 				indOutput << "greenSec_1_0" << '\t' << "blueSec_1_0" << '\t' << "secCol_1_0" << '\t';
@@ -191,8 +197,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param
 				indOutput << "redSec_2_1" << '\t' << "greenSec_2_1" << '\t' << "blueSec_2_1" << '\t';
 				indOutput << "secCol_2_1" << '\t' << "strip_2_1" << '\t' << "dots_2_1" << '\t';
 			}
-			else
-			{
+			else {
 				indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
 				indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t';
 				indOutput << "redSec_1" << '\t' << "greenSec_1" << '\t' << "blueSec_1" << '\t';
@@ -203,8 +208,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param
 				indOutput << "strip_2" << '\t' << "dots_2" << '\t' << "featChoice";
 			}
 		}
-		else
-		{
+		else {
 			indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
 			indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t' << "redSec_1" << '\t';
 			indOutput << "greenSec_1" << '\t' << "blueSec_1" << '\t' << "secCol_1" << '\t';
@@ -214,51 +218,47 @@ void initializeIndFile(ofstream &indOutput, agent &learner, nlohmann::json param
 	}
 }
 
-int _tmain(int argc, _TCHAR* argv[])
-{
+int _tmain(int argc, _TCHAR* argv[]) {
+
 	ifstream input(argv[1]);
 	//ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
 	//ifstream input("D:\\quinonesa\\Simulation\\functionAprox\\out_0\\parameters.json");
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
-	int const totRounds = param["totRounds"];
-	ResReward = param["ResReward"];
-	VisReward = param["VisReward"];
-	double ResProb = param["ResProb"];
-	double VisProb = param["VisProb"];
-	double ResProbLeav = param["ResProbLeav"];
-	double VisProbLeav = param["VisProbLeav"];
-	double negativeRew = param["negativeRew"];
-	bool experiment = param["experiment"];
-	double inbr = param["inbr"];
-	double outbr = param["outbr"];
-	int trainingRep = param["trainingRep"];
-	double alphaT = param["alphaT"];
+	/*json param;
+
+	param["totRounds"] = 10;
+	param["ResReward"] = 10;
+	param["VisReward"] = 10;
+	param["ResProb"] = 0.2;
+	param["VisProb"] = 0.2;
+	param["ResProbLeav"] = 0;
+	param["VisProbLeav"] = 1;
+	param["negativeRew"] = -10;
+	param["experiment"] = false;
+	param["inbr"] = 0;
+	param["outbr"] = 0;
+	param["trainingRep"] = 1;
+	param["alphaT"] = 1e-005;
+	param["printGen"] = 1;
+	param["seed"] = 1;
+	param["gammaRange"] = { 0, 0.8 };
+	param["tauRange"] = { 5, 10 },
+		param["netaRange"] = { 0, 0.5 };
+	param["mins"] = { 10, 10 };
+	param["folder"] = "S:/quinonesa/Simulations/functionAprox/General/mHeightC30_/";
+	param["visitors"]["Sp1"]["means"] = { 30, 20, 40, 40, 40, 40, 40, 40 };
+	param["visitors"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
+	param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
+	param["visitors"]["Sp1"]["relAbun"] = 1;
+	param["residents"]["Sp1"]["means"] = { 20, 30, 40, 40, 40, 40, 40, 40 };
+	param["residents"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
+	param["residents"]["Sp1"]["probs"] = { 0, 1, 1 };
+	param["residents"]["Sp1"]["relAbun"] = 1;*/
+	
 	const int numlearn = 2;
-	int printGen = param["printGen"];
-	int seed = param["seed"];
-
-	json::iterator vsd = param["visitors"]["Sp1"]["sds"].begin();
-	json::iterator rm = param["residents"]["Sp1"]["means"].begin();
-	json::iterator rsds = param["residents"]["Sp1"]["sds"].begin();
-	for (json::iterator vm = param["visitors"]["Sp1"]["means"].begin(); 
-		vm != param["visitors"]["Sp1"]["means"].end(); vm++)
-	{
-		visitMeans[vm-param["visitors"]["Sp1"]["means"].begin()] = *vm;
-		visitSds[vsd-param["visitors"]["Sp1"]["sds"].begin()] = *vsd, ++vsd;
-		residMeans[rm-param["residents"]["Sp1"]["means"].begin()] = *rm, ++rm;
-		residSds[rsds-param["residents"]["Sp1"]["sds"].begin()] = *rsds, ++rsds;
-	}
-
-	json::iterator vp = param["visitors"]["Sp1"]["probs"].begin();
-	for (json::iterator rp = param["residents"]["Sp1"]["probs"].begin();
-		rp != param["residents"]["Sp1"]["probs"].end(); ++rp)
-	{
-		residProbs[rp - param["residents"]["Sp1"]["probs"].begin()] = *rp;
-		visitProbs[vp - param["visitors"]["Sp1"]["probs"].begin()] = *vp, ++vp;
-	}
-
+	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
 	 /*
 	for (size_t i = 0; i < 8; i++)
@@ -307,40 +307,42 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	int seed = 12;*/
 
-	rnd::set_seed(seed);
+	rnd::set_seed(param["seed"].get<int>());
+	rnd::discrete_distribution residSpProbs = clientProbs(param, "residents");
+	rnd::discrete_distribution visitSpProbs = clientProbs(param, "visitors");
 
 	client *clientSet;
-	clientSet = new client[totRounds * 2];
+	clientSet = new client[param["totRounds"].get<int>() * 2];
 	int idClientSet;
 
 	agent *learners[numlearn];
 
 	cout << param["folder"] << endl;
-	for (json::iterator itn = param["netaRange"].begin(); itn != param["netaRange"].end(); ++itn) 
-	{
-		for (json::iterator itg = param["gammaRange"].begin(); itg != param["gammaRange"].end(); ++itg)
-		{
-			for (json::iterator itt = param["tauRange"].begin(); itt != param["tauRange"].end(); ++itt) 
-			{
+	for (json::iterator itn = param["netaRange"].begin(); 
+		itn != param["netaRange"].end(); ++itn) {
+		for (json::iterator itg = param["gammaRange"].begin(); 
+			itg != param["gammaRange"].end(); ++itg) {
+			for (json::iterator itt = param["tauRange"].begin(); 
+				itt != param["tauRange"].end(); ++itt) {
 				ofstream printTest;
 				ofstream DPprint;
-				learners[0] = new FIATy2(alphaT, *itg, *itt, *itn);
-				learners[1] = new PIATy2(alphaT, *itg, *itt, *itn);
-				for (int k = 0; k < numlearn; ++k)  //numlearn
-				{
+				learners[0] = new FIATy2(param["alphaT"].get<double>(),
+					*itg, *itt, *itn);
+				learners[1] = new PIATy2(param["alphaT"].get<double>(),
+					*itg, *itt, *itn);
+				for (int k = 0; k < numlearn; ++k) {
 					initializeIndFile(printTest, *learners[k], param,0);
-					for (int i = 0; i < trainingRep; i++)
-					{
-						draw(clientSet, totRounds, ResProb, VisProb);
+					for (int i = 0; i < param["trainingRep"].get<int>(); 
+						i++) {
+						draw(clientSet, param, visitSpProbs,residSpProbs);
 						idClientSet = 0;
-						for (int j = 0; j < totRounds; j++)
-						{
-							learners[k]->act(clientSet, idClientSet, VisProbLeav, ResProbLeav, 
-								VisReward, ResReward, inbr, outbr, negativeRew, experiment);
+						for (int j = 0; j < param["totRounds"].get<int>(); j++) {
+							cout << "Round= " << j << endl;
+							learners[k]->act(clientSet, idClientSet, param,
+								visitSpProbs, residSpProbs);
 							learners[k]->updateDerived();
-							if (j%printGen == 0)
-							{
-								learners[k]->printIndData(printTest, i, outbr);
+							if (j % param["printGen"].get<int>() == 0) {
+								learners[k]->printIndData(printTest, i);
 							}
 						}
 						learners[k]->rebirth();
@@ -348,8 +350,15 @@ int _tmain(int argc, _TCHAR* argv[])
 					printTest.close();
 					if (k == 0) {
 						initializeIndFile(DPprint, *learners[0], param, 1);
-						learners[k]->DPupdate(ResProb, VisProb, VisProbLeav, ResProbLeav, outbr,
-							ResReward, VisReward, negativeRew, DPprint, experiment);
+						learners[k]->DPupdate(param["ResProb"].get<double>(), 
+							param["VisProb"].get<double>(), 
+							param["VisProbLeav"].get<double>(), 
+							param["ResProbLeav"].get<double>(), 
+							param["outbr"].get<double>(),
+							param["ResReward"].get<double>(), 
+							param["VisReward"].get<double>(), 
+							param["negativeRew"].get<double>(), DPprint, 
+							param["experiment"].get<bool>());
 						DPprint.close();
 					}					
 					delete learners[k];

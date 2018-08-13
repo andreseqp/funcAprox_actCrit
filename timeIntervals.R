@@ -14,8 +14,8 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-c(rep("outb",3),"tau","gamma","neta"))
-(listVal<-c(0,0.1,0.2,10,0.8,0))
+(listPar<-c(rep("sds",3),"tau","gamma","neta"))
+(listVal<-c(1,3,5,10,0.8,0))
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 diffJsons(param[1],param[3])
@@ -23,10 +23,10 @@ diffJsons(param[1],param[3])
 list.files(simsDir,recursive = TRUE,pattern ="outb")
 
 # Load interval data for FIA from the raw data
-FIAtimeInt<-do.call(
-  rbind,lapply(
-    getFilelist(simsDir,listPar,listVal)$FIA[c(4,8,9)],
+FIAtimeInt<-rbindlist(lapply(
+    getFilelist(simsDir,listPar,listVal)$FIA,
     file2timeInter,interV=1001))
+
 
 # Load FIA data from processed file
 
@@ -38,8 +38,7 @@ FIAtimeInt<-do.call(
 
 
 # Load interval data for PIA from the raw data
-PIAtimeInt<-do.call(
-  rbind,lapply(
+PIAtimeInt<-rbindlist(lapply(
     getFilelist(simsDir,listPar,listVal)$PIA,
     file2timeInter,interV=1001))
 
@@ -49,9 +48,8 @@ PIAtimeInt<-do.call(
 #   rbind,lapply(getFilelist(genDir,listPar,listVal)$PIA,fread))
 
 # Load DP data from the raw data
-DPdataProb<-do.call(rbind,
-                    lapply(getFilelist(simsDir,listPar,listVal)$DP,
-                           file2lastDP))
+DPdataProb<-rbindlist(lapply(getFilelist(simsDir,listPar,listVal)$DP,
+                             file2lastDP))
 
 # Load DP data from processed file
 
