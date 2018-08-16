@@ -7,7 +7,7 @@
 #include "D:\\quinonesa\\Dropbox\C++\\json.hpp"  
 
 
-enum learPar { alphaPar, gammaPar, tauPar, netaPar };
+enum learPar { alphaCritPar, alphaActPar, gammaPar, netaPar };
 
 // Global variables
 // Client's characteristics
@@ -18,9 +18,8 @@ extern double boolExtUpdate = 10;
 class agent {
 	// Learning agent
 public:
-	agent();		
-	// basic contructor
-	agent(double alphaI, double gammaI, double tauI, double netaI);
+	agent(double alphaCI, double alphaAI, double gammaI, bool netaI, 
+		double InitVal);
 	// constructor providing values for the learning parameters
 	virtual ~agent();
 	// destructor not really necessary
@@ -34,14 +33,12 @@ public:
 	//see new state and chooses future action
 	void printIndData(std::ofstream &learnSeries, int &seed);
 	// prints individual data from the learning process
-	void printDPData(std::ofstream &DPdata, double &outbr, int &time);
-	// prints the data from the Dynamic Programming algorithm
 	double getLearnPar(learPar parameter);
 	// function to access the learning parameters
 	void checkChoice();
 	// Check that the choice taken is among one of the options, 
 	// otherwise trigger an error
-	void rebirth();
+	void rebirth(double InitVal);
 	// Function to reset private variables in an individual
 	void getExternalOptions(client newOptions[], int &idNewOptions, 
 		nlohmann::json param,
@@ -49,18 +46,12 @@ public:
 		rnd::discrete_distribution residSpProb);
 	// After unattended clinets leave or stay, get new clients
 	void ObtainReward();
-	double softMax(double &value1, double &value2);
-	// softmax function to take a desicion about the two actions
-	double valueClient(int clientid, int &countFeat);
-	// calculates value contribution of 1 client
-	void DPupdate(double probRes, double probVis, double VisProbLeav, 
-		double ResProbLeav, double outbr, double ResReward,
-		double VisReward, double negativeRew, std::ofstream &DPdata, 
-		bool experiment);
-	// change estimated value according to current reward and estimates of 
-	// future state-action pair
-	int mapOptions(client cleanOptions[], int choice);
-	// map the option to the DP backup
+	double linearComClient(int clientid, int &countFeat,
+		double featWeights[]);
+	// Use linear combinations of features to calculate either value or preference
+	double logist(double diffPref);
+	// Use the preference to calculate the probability of choosing 
+	// the first (0) client
 	void getNewOptions(client newOptions[], int &idNewOptions, 
 		nlohmann::json param, rnd::discrete_distribution visitSpProb,
 		rnd::discrete_distribution residSpProb);
@@ -75,23 +66,29 @@ public:
 	
 	// virtual functions
 	virtual double value() = 0;
-	// Calculates the value estimation for the current option/options
-	virtual void choice(int &StaAct1, int &StaAct2) = 0;
+	// Calculates the value estimation for the current state
+	virtual double preference() = 0;
+	// Calculates the preference for chosing the first (0) client.
+	virtual void choice() = 0;
 	virtual void updateDerived() = 0;
 	int numEst;							
 	// Number of estimates characterizing bhavioural options
 	//void (agent::*pointGNO)(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward) = NULL;                // C++
 protected:
-	double featWeights[44];
+	double featWeightsCrit[44];
 	// vector of weights to fit the state-action value function. 
 	// Each corresponds to one feature of the client
-	double DPbackup[9];
-	// vector with the backed-up values of the state-action 
-	// pairs using dynamic programming
-	int DPid;
-	double valuesT[2];
-	// value estimated for each one of the available options
-	double valuesT1[2];
+	double featWeightsAct[44];
+	// vector of weights to fit the state-action value function. 
+	// Each corresponds to one feature of the client
+	double valuesT;
+	// value estimated for current state
+	double valuesT1;
+	// value estimated for future state state
+	double prefT;
+	// calculated preference for options available in the current state
+	double prefT1;
+	// calculated preference for options available in the future state
 	int choiceT;		
 	// current choice 
 	int choiceT1;
@@ -103,61 +100,50 @@ protected:
 	int age;
 	double negReward;
 private:
-	double alpha;
-	// speed of learning
+	double alphaCrit;
+	// speed of learning for the critic
+	double alphaAct;
+	// speed of learning for the actor
 	double gamma;
 	// importance of future rewards
-	double tau;
-	// level of explorative behaviour. The higher, the less important values is when making decisions
-	double neta;
+	bool neta;
 };
 
 // Members of agent class
 
-agent::agent() {
-	// basic constructor
-	numEst = 23;
-	client noClient = client();
-	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
-	alpha = 0.01, gamma = 0.5, tau = 10, neta = 0;																
-	// Default values
-	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
-	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;
-	valuesT[0] = 0, valuesT[1] = 0, valuesT1[0] = 0, valuesT1[1] = 0;
-	currentReward = 0, cumulReward = 0, negReward = 0;
-	age = 0;
-	DPid = -1;
-	for (size_t i = 0; i < 9; i++) { DPbackup[i] = 0; }
-}
-
-agent::agent(double alphaI, double gammaI, double tauI, double netaI) {
+agent::agent(double alphaCI=0.01, double alphaAI=0.01, 
+	double gammaI=0.5, bool netaI=0,double InitVal=0) {
 	// parameterized constructor
 	numEst = 23;
 	client noClient = client();
-	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
+	for (int i = 0; i < numEst; i++) {
+		featWeightsCrit[i] = 0;
+		featWeightsAct[i] = 0;
+	}
 	//values[4] = 10, values[2] = 10;
-	alpha = alphaI, gamma = gammaI, tau = tauI, neta = netaI;
+	alphaCrit = alphaCI, alphaAct = alphaAI, gamma = gammaI, neta = netaI;
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;  
-	valuesT[0] = 0, valuesT[1] = 0, valuesT1[0] = 0, valuesT1[1] = 0;
+	valuesT = 0, valuesT1 = 0;
+	prefT = 0, prefT1= 0;
 	currentReward = 0, cumulReward = 0, negReward = 0;
 	age = 0;
-	DPid = -1;
-	for (size_t i = 0; i < 9; i++) { DPbackup[i] = 0; }
 }
 
-void agent::rebirth() {
+void agent::rebirth(double InitVal=0) {
 	age = 0;
 	client noClient = client();
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;
-	valuesT[0] = 0, valuesT[1] = 0, valuesT1[0] = 0, valuesT1[1] = 0;
+	valuesT = 0, valuesT1 = 0;
+	prefT = 0, prefT1 = 0;
 	currentReward = 0;
 	cumulReward = 0;
 	negReward = 0;
-	for (int i = 0; i < numEst; i++) { featWeights[i] = 0; }
-	DPid = -1;
-	for (size_t i = 0; i < 9; i++) { DPbackup[i] = 0; }
+	for (int i = 0; i < numEst; i++) {
+		featWeightsCrit[i] = 0;
+		featWeightsAct[i] = 0;
+	}
 	//values[4] = 10, values[2] = 10;
 }
 
@@ -172,9 +158,9 @@ void agent::checkChoice() {
 }
 
 double agent::getLearnPar(learPar parameter) {
-	if (parameter == alphaPar) { return alpha; }
+	if (parameter == alphaCritPar) { return alphaCrit; }
 	else if (parameter == gammaPar) { return gamma; }
-	else if (parameter == tauPar) { return tau; }
+	else if (parameter == alphaActPar) { return alphaAct; }
 	else { return neta; }
 }
 
@@ -350,7 +336,7 @@ void agent::act(client newOptions[], int &idNewOptions,
 	// Future state becomes current state
 	choiceT = choiceT1;
 	// Future action becomes current action
-	valuesT[0] = valuesT1[0], valuesT[1] = valuesT1[1];
+	valuesT = valuesT1;
 	checkChoice();		
 	// Check that the choice is among the options
 	cleanOptionsT1[0].rebirth();
@@ -360,15 +346,9 @@ void agent::act(client newOptions[], int &idNewOptions,
 	ObtainReward();
 	getNewOptions(newOptions, idNewOptions, param, visitSpProb,
 		residSpProb);
-	choiceT1 = 0;					
-	// Look into the value of state action pair if option 1 is chosen
-	valuesT1[0] = value();
-	//StaAct1 = mapOptions(cleanOptionsT1, choiceT1);
-	choiceT1 = 1;
-	// Look into the value of state action pair if option 1 is chosen
-	valuesT1[1] = value();
-	//StaAct2 = mapOptions(cleanOptionsT1, choiceT1);
-	choice(StaAct1, StaAct2);
+	valuesT1 = value();
+	prefT1 = preference();
+	choice();
 }
 /*void agent::update(double &reward)																				// change estimated value according to current reward and estimates of future state-action pair
 {
@@ -391,21 +371,18 @@ void agent::act(client newOptions[], int &idNewOptions,
 void agent::updateClient(int &countWeights, int clientId) {
 	// change estimated value according to current reward and 
 	// estimates of future state-action pair
+	double delta = currentReward + negReward*neta + 
+		gamma*valuesT1	- valuesT;
 	for (int i = 0; i < cleanOptionsT[clientId].numFeat[0] + 
 		cleanOptionsT[clientId].numFeat[1]; i++) {
 		if (i<cleanOptionsT[clientId].numFeat[0]) {
-			featWeights[countWeights] += alpha*(currentReward*(1-neta) 
-										+ negReward*neta 
-				                        + gamma*valuesT1[choiceT1] 
-										- valuesT[choiceT])*
+			featWeightsCrit[countWeights] += alphaCrit*delta*
 				cleanOptionsT[clientId].featQuant[i];
 			++countWeights;
 		}
 		else {
-			featWeights[countWeights] += 
-				boolExtUpdate*alpha*(currentReward*(1 - neta) +
-					negReward*neta + gamma*valuesT1[choiceT1] - 
-					valuesT[choiceT])*
+			featWeightsCrit[countWeights] += 
+				boolExtUpdate*alphaCrit*delta*
 				cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
 			++countWeights;
 		}
@@ -414,48 +391,38 @@ void agent::updateClient(int &countWeights, int clientId) {
 
 void agent::printIndData(std::ofstream &learnSeries, int &seed) {
 	learnSeries << seed << '\t' << age << '\t';
-	learnSeries << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
+	learnSeries << alphaCrit << '\t' << alphaCrit << '\t' << gamma << '\t';
+	learnSeries << neta << '\t';
 	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
-	learnSeries << valuesT[choiceT] << '\t';
+	learnSeries << valuesT << '\t';
 	cleanOptionsT[choiceT].printClientData(learnSeries);
 	if (choiceT == 0) {	
-		learnSeries << valuesT[1] << '\t';
 		cleanOptionsT[1].printClientData(learnSeries);	
 	}
 	else { 
-		learnSeries << valuesT[0] << '\t';
 		cleanOptionsT[0].printClientData(learnSeries); 
 	}
 	for (int j = 0; j < numEst; j++) {
-		learnSeries << featWeights[j] << '\t';
+		learnSeries << featWeightsCrit[j] << '\t';
+		//cout << values[j] << '\t';
+	}
+	for (int j = 0; j < numEst; j++) {
+		learnSeries << featWeightsAct[j] << '\t';
 		//cout << values[j] << '\t';
 	}
 	learnSeries << std::endl;
 	//cout << endl;
 }
 
-void agent::printDPData(std::ofstream &DPdata, double &outbr, int &time)	{
-	// Print the outcome of the DP estimation
-	DPdata << time << '\t';
-	DPdata << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
-	DPdata << outbr << '\t';
-	for (size_t j = 0; j < 9; j++)	{
-		DPdata << DPbackup[j] << '\t';
-		//cout << values[j] << '\t';
-	}
-	DPdata << std::endl;
-	//cout << endl;
+
+double agent::logist(double diffPref) { 
+	return (1 / (1 + exp(-diffPref))); 
 }
 
-double agent::softMax(double &value1, double &value2) {
-	double prob1 = (exp(value1 / tau)) / (exp(value1 / tau) + exp(value2 / tau));			
-	// Calculate probability of chosing option 1
-	return(prob1);
-}
-
-double agent::valueClient(int clientid, int &countFeat) {
+double agent::linearComClient(int clientid, int &countFeat, 
+	double featWeights[]) {
 	double temp = 0;
-	for (int i = 0; i < cleanOptionsT1[clientid].numFeat[0] + 
+	for (int i = 0; i < cleanOptionsT1[clientid].numFeat[0] +
 		cleanOptionsT1[clientid].numFeat[1]; i++) {
 		if (i < cleanOptionsT1[clientid].numFeat[0]) {
 			temp += cleanOptionsT1[clientid].featQuant[i] *
@@ -471,173 +438,21 @@ double agent::valueClient(int clientid, int &countFeat) {
 	return(temp);
 }
 
-int agent::mapOptions(client cleanOptions[], int choice) {
-	int stateAction;
-	if (cleanOptions[0].mytype == absence || cleanOptions[1].mytype == absence)	{
-		// One of the options is empty
-		if (cleanOptions[0].mytype == resident || 
-			cleanOptions[1].mytype == resident) {
-            // the other one is a resident
-			if (cleanOptions[choice].mytype == resident) { stateAction = 4; } 
-			// State = R0 , action = R		
-			else { stateAction = 5; }
-			// State = R0 , action = 0		
-		}
-		else if (cleanOptions[0].mytype == visitor || 
-			cleanOptions[1].mytype == visitor) {						
-		// the other one is a resident
-		if (cleanOptions[choice].mytype == visitor) { stateAction = 2; } // State = V0 , action = V
-		else { stateAction = 3; }				   // State = V0 , action = 0
-		}
-		else { stateAction = 8; }					   // State = 00 , action = 0		// the other one is empty too
-	}
-	else if (cleanOptions[0].mytype == resident || 
-		cleanOptions[1].mytype == resident) {
-		// Both options have clients and one of them is a resident
-		if (cleanOptions[0].mytype == visitor || 
-			cleanOptions[1].mytype == visitor) {
-			// the other one is a visitor
-			if (cleanOptions[choice].mytype == resident) { stateAction = 1; }// State = RV , action = R		
-			else { stateAction = 0; }				   // State = RV , action = V
-		}
-		else { stateAction = 7; }					   // State = RR , action = R		
-	}
-	else { stateAction = 6; }						   // State = VV , action = V
-	return stateAction;
-}
-void agent::DPupdate(double probRes, double probVis, double VisProbLeav, 
-	double ResProbLeav, double outbr, double ResReward, double VisReward, 
-	double negativeRew, std::ofstream &DPdata, bool experiment) {
-	// Expected value according to DP algorithm
-	double transProb[9] = { 0,0,0,0,0,0,0,0,0 };
-	// Transition probabilities
-	double sum;
-	double rewards[9] = { VisReward*(1 - neta) + neta*ResProbLeav*negativeRew,			//0
-		ResReward*(1 - neta) + neta*VisProbLeav*negativeRew,							//1
-		VisReward*(1 - neta),															//2
-		neta*VisProbLeav*negativeRew,													//3
-		ResReward*(1 - neta),											                //4
-		neta*ResProbLeav*negativeRew,								                    //5
-		VisReward*(1 - neta) + neta*VisProbLeav*negativeRew,		                    //6
-		ResReward*(1 - neta) + neta*ResProbLeav*negativeRew,		                    //7
-		0 };															                //8
-	if (experiment)	{
-		// In an experimental setting
-		for (int k = 0; k < 1000; k++)	{
-			for (size_t i = 0; i < 9; i++) {
-				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-				if (DPid == 0) {
-					transProb[0] = 0;
-					transProb[1] = 0;
-					transProb[2] = 0;
-					transProb[3] = 0;
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*(1 - ResProbLeav);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])*(1 - ResProbLeav);
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = ResProbLeav;
-				}
-				else if (DPid == 1) {
-					transProb[0] = 0;
-					transProb[1] = 0;
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*(1 - VisProbLeav);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*(1 - VisProbLeav);
-					transProb[4] = 0;
-					transProb[5] = 0;
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = VisProbLeav;
-				}
-				else {
-					transProb[0] = softMax(DPbackup[0], DPbackup[1]);
-					transProb[1] = softMax(DPbackup[1], DPbackup[0]);
-					transProb[2] = 0;
-					transProb[3] = 0;
-					transProb[4] = 0;
-					transProb[5] = 0;
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = 0;
-				}
-				sum = 0;
-				for (int j = 0; j < 9; j++)	{
-					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-				}
-				DPbackup[DPid] = sum;
-			}
-			printDPData(DPdata, outbr, k);
-		}
-	}
-	else {
-		// In a natural setting
-		for (int k = 0; k < 1000; k++) {
-			for (size_t i = 0; i < 9; i++) {
-				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-				if (DPid == 0 || DPid == 5 || DPid == 7)
-				{
-					transProb[0] = softMax(DPbackup[0], DPbackup[1])*((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + ResProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0])*((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + ResProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) + ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])*((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) + ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-					transProb[6] = ResProbLeav*pow(probVis, 2)*(1 - outbr);
-					transProb[7] = ((1 - ResProbLeav)*probRes + ResProbLeav*pow(probRes, 2))*(1 - outbr);
-					transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2);
-				}
-				else if (DPid == 1 || DPid == 3 || DPid == 6)
-				{
-					transProb[0] = softMax(DPbackup[0], DPbackup[1])*((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + VisProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0])*((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + VisProbLeav * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes)));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) + VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) + VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-					transProb[6] = ((1 - VisProbLeav)*probVis + VisProbLeav*pow(probVis, 2))*(1 - outbr);
-					transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - outbr);
-					transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2);
-				}
-				else
-				{
-					transProb[0] = softMax(DPbackup[0], DPbackup[1]) * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0]) * (2 * probRes*probVis*(1 - outbr) + outbr*(probVis + probRes));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3]) * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2]) * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[4] = softMax(DPbackup[4], DPbackup[5]) * (1 - probRes - probVis) * probRes*(2 - outbr);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4]) * (1 - probRes - probVis) * probRes*(2 - outbr);
-					transProb[6] = pow(probVis, 2)*(1 - outbr);
-					transProb[7] = pow(probRes, 2)*(1 - outbr);
-					transProb[8] = pow((1 - probRes - probVis), 2);
-				}
-				sum = 0;
-				for (int j = 0; j < 9; j++)
-				{
-					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-				}
-				DPbackup[DPid] = sum;
-			}
-			printDPData(DPdata, outbr, k);
-		}
-	}
-}
-
 class FIATy1																								// Agent that estimates state-action and uses value for every desicion
 	:public agent {
 public:
 	FIATy1(double alphaI, double gammaI, double tauI, double netaI)
 		:agent(alphaI, gammaI, tauI, netaI)	{
-			numEst = 44;
+			numEst = 22;
 		}
-	virtual void choice(int &StaAct1, int &StaAct2) {
-		double tautemp = getLearnPar(tauPar);
-		if (rnd::uniform() < softMax(valuesT1[0],valuesT1[1]))
+	virtual void choice() {
+		if (rnd::uniform() < logist(prefT1))
 		{ choiceT1= 0; }
 		else { choiceT1 = 1; }
 	}
 	virtual void updateDerived() {
 		int countWeights = 0;
-		if (choiceT)
-		{
+		if (choiceT) {
 			countWeights = 22;
 		}
 		updateClient(countWeights, 0);
@@ -645,14 +460,18 @@ public:
 	}
 	virtual double value() {
 		int countFeat = 0;
-		if (choiceT1)
-		{
-			countFeat = 22;
-		}
 		double client0 = 0;
 		double client1 = 0;
-		client0 = valueClient(0, countFeat);
-		client1 = valueClient(1, countFeat);
+		client0 = linearComClient(0, countFeat,featWeightsCrit);
+		client1 = linearComClient(1, countFeat,featWeightsCrit);
+		return(client0 + client1);
+	}
+	virtual double preference() {
+		int countFeat = 0;
+		double client0 = 0;
+		double client1 = 0;
+		client0 = linearComClient(0, countFeat, featWeightsAct);
+		client1 = linearComClient(1, countFeat, featWeightsAct);
 		return(client0 + client1);
 	}
 };
@@ -666,11 +485,11 @@ public:
 		:agent(alphaI, gammaI, tauI,netaI) {
 		numEst = 44;
 	}
-	virtual void choice(int &StaAct1, int &StaAct2)	{
+	virtual void choice() {
 		if (cleanOptionsT1[0].mytype != absence && 
 			cleanOptionsT1[1].mytype != absence) {
 			// if there are no absences, then use desicion rule
-			if (rnd::uniform() < softMax(valuesT1[0], valuesT1[1]))	{
+			if (rnd::uniform() < logist(prefT1))	{
 				choiceT1 = 0;
 			}
 			else { choiceT1 = 1; }
@@ -701,6 +520,14 @@ public:
 		double client1 = 0;
 		client0 = valueClient(0, countFeat);
 		client1 = valueClient(1, countFeat);
+		return(client0 + client1);
+	}
+	virtual double preference() {
+		int countFeat = 0;
+		double client0 = 0;
+		double client1 = 0;
+		client0 = linearComClient(0, countFeat, featWeightsAct);
+		client1 = linearComClient(1, countFeat, featWeightsAct);
 		return(client0 + client1);
 	}
 };

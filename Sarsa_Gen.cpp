@@ -260,52 +260,6 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	const int numlearn = 2;
 	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
-	 /*
-	for (size_t i = 0; i < 8; i++)
-	{
-		visitMeans[i] = 40;
-		visitSds[i] = 3;
-		residMeans[i] = 40;
-		residSds[i] = 3;
-		if (i < 3){
-			visitProbs[i] = 1;
-			residProbs[i] = 1;
-		}
-	}
-	visitMeans[0] = 30, residMeans[0] = 20;
-	visitMeans[1] = 20, residMeans[1] = 30;
-	residProbs[0] = 0;
-	mins[0] = 10, mins[1] = 10;
-	int totRounds = 100000;
-	ResReward = 10;
-	VisReward = 10;
-	double ResProb = 0.2;
-	double VisProb = 0.2;
-	double ResProbLeav = 0;
-	double VisProbLeav = 1;
-	double negativeRew = -10;
-	bool experiment = 0;
-	double inbr = 0.0;
-	double outbr = 0;
-	int const trainingRep = 15;//30
-	double alphaT = 0.000001;
-	const int numlearn = 2;
-	int printGen = 10;
-
-	double gammaT;
-
-	double gammaRange[3] = { 0, 0.5, 0.8 };
-
-	double tauT;
-
-	double tauRange[3] = { 1, 2, 5};
-	
-	double netaT = 0;
-
-	double netaRange[1] = { 0.5 };
-
-
-	int seed = 12;*/
 
 	rnd::set_seed(param["seed"].get<int>());
 	rnd::discrete_distribution residSpProbs = clientProbs(param, "residents");
