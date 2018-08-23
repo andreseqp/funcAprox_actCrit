@@ -1,8 +1,8 @@
 # ------------------ Exploration ------------------------ #
 
 # Directories --------------------------------------------------------------
-genDir<-"S:/quinonesa/Simulations/functionAprox/General/"
-scriptDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
+genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/"
+scriptDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
 
 
 # libraries ----------------------------------------------------------------
@@ -15,18 +15,19 @@ library('lme4')
 
 # Load data ------------------------------------------------------------
 
+setwd(genDir)
 
-listPar<-c("gamma","tau","neta","outb")
-listVal<-c(0.8,10,0,0)
+(listPar<-c(rep("mHeight",3),"gamma","neta"))
+(listVal<-c(30,40,50,0.8,0))
 
-FIAraw<-loadRawData(genDir,"FIA",listparam = listPar,values = listVal)
+FIAraw<-loadRawData(genDir,getFilelist(genDir,listPar,listVal)$FIA[1])
 param<-getParam(genDir,listparam = listPar,values = listVal)
 
 
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
                                                              sd = sd(x))))),
-               by=.(Age,Alpha,Gamma,Tau,Neta,Outbr), 
+               by=.(Age,AlphaCri,AlphaAct,Gamma,Neta), 
                .SDcols=grep("[[:digit:]]",names(FIAraw))]
 
 
@@ -61,19 +62,21 @@ featNames<-list(first.client=list(
       sd=grep("_2_1.sd",names(FIAagg),value = TRUE))))
 
 
-# Plot of the dynamics of the feature weights --------------------------------------------------
+#  Critic feature weights dyanamics--------------------------------------------------
 
 countR<-1
 countC<-0
 i<-0
 par(xaxt='s',yaxt='s')
 plot.new()
-ylimtemp<-c(min(FIAagg[(Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0),
-                       .SD,.SDcols=grep("_",names(FIAagg),value = TRUE)]),
-            max(FIAagg[(Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0),
-                       .SD,.SDcols=grep("_",names(FIAagg),value = TRUE)]))
-with(FIAagg[(Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0)],{
-  for(feat in grep("_0.mean",names(FIAagg),value = TRUE)){
+
+ylimtemp<-c(min(FIAagg[,
+                       .SD,.SDcols=grep("_Crit",names(FIAagg),value = TRUE)]),
+            max(FIAagg[,
+                       .SD,.SDcols=grep("_Crit",names(FIAagg),value = TRUE)]))
+
+with(FIAagg,{
+  for(feat in grep("0_Crit.mean",names(FIAagg),value = TRUE)){
     i<-i+1
     countC<-countC+1
     par(plt=posPlot(numplotx = 5,numploty = 5,idplotx = countC,idploty = countR),
@@ -81,27 +84,27 @@ with(FIAagg[(Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0)],{
     plot(c(min(Age),max(Age)),rep(0,2),type = "l",
          xlab = '',ylab='',ylim=ylimtemp,col="grey")
     polygon(c(Age,Age[length(Age):1]),
-              c(get(feat)+get(grep("_0.sd",names(FIAagg),
+              c(get(feat)+get(grep("0_Crit.sd",names(FIAagg),
                                    value = TRUE)[i]),
                 get(feat)[length(Age):1]-
-                  get(grep("_0.sd",names(FIAagg),
+                  get(grep("0_Crit.sd",names(FIAagg),
                            value = TRUE)[i])[length(Age):1]),
             col = colours[1],border = FALSE)
     polygon(c(Age,Age[length(Age):1]),
-            c(get(grep("_1.mean",names(FIAagg),value = TRUE)[i])+
-                    get(grep("_1.sd",names(FIAagg),
+            c(get(grep("1_Crit.mean",names(FIAagg),value = TRUE)[i])+
+                    get(grep("1_Crit.sd",names(FIAagg),
                              value = TRUE)[i]),
-              get(grep("_1.mean",names(FIAagg),
+              get(grep("1_Crit.mean",names(FIAagg),
                        value = TRUE)[i])[length(Age):1]-
-                get(grep("_1.sd",names(FIAagg),
+                get(grep("1_Crit.sd",names(FIAagg),
                          value = TRUE)[i])[length(Age):1]),
             col = colours[2],border = FALSE);
     lines(Age,get(feat),type = "l")
-    lines(Age,get(grep("_1.mean",names(FIAagg),
+    lines(Age,get(grep("1_Crit.mean",names(FIAagg),
                        value = TRUE)[i]),type = "l")
     # title(main = feat,line = -4)
     legend('bottomleft',
-           legend = c(feat,grep("_1.mean",names(FIAagg),value=TRUE)[i])
+           legend = c(feat,grep("1_Crit.mean",names(FIAagg),value=TRUE)[i])
                                        ,col = colours,pch = 15,cex = 0.5)
     par(yaxt='n');
     if((i)%%5==0)
@@ -112,17 +115,103 @@ with(FIAagg[(Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0)],{
     }
   }
 })
+
+
+
+# Actor feature weights dyanamics ----------------------------------------------
+
+countR<-1
+countC<-0
+i<-0
+par(xaxt='s',yaxt='s')
+plot.new()
+
+ylimtemp<-c(min(FIAagg[,
+                       .SD,.SDcols=grep("_Act",names(FIAagg),value = TRUE)]),
+            max(FIAagg[,
+                       .SD,.SDcols=grep("_Act",names(FIAagg),value = TRUE)]))
+
+with(FIAagg,{
+  for(feat in grep("0_Act.mean",names(FIAagg),value = TRUE)){
+    i<-i+1
+    countC<-countC+1
+    par(plt=posPlot(numplotx = 5,numploty = 5,idplotx = countC,idploty = countR),
+        new=TRUE,las=1,cex.main=0.5)
+    plot(c(min(Age),max(Age)),rep(0,2),type = "l",
+         xlab = '',ylab='',ylim=ylimtemp,col="grey")
+    polygon(c(Age,Age[length(Age):1]),
+            c(get(feat)+get(grep("0_Act.sd",names(FIAagg),
+                                 value = TRUE)[i]),
+              get(feat)[length(Age):1]-
+                get(grep("0_Act.sd",names(FIAagg),
+                         value = TRUE)[i])[length(Age):1]),
+            col = colours[1],border = FALSE)
+    polygon(c(Age,Age[length(Age):1]),
+            c(get(grep("1_Act.mean",names(FIAagg),value = TRUE)[i])+
+                get(grep("1_Act.sd",names(FIAagg),
+                         value = TRUE)[i]),
+              get(grep("1_Act.mean",names(FIAagg),
+                       value = TRUE)[i])[length(Age):1]-
+                get(grep("1_Act.sd",names(FIAagg),
+                         value = TRUE)[i])[length(Age):1]),
+            col = colours[2],border = FALSE);
+    lines(Age,get(feat),type = "l")
+    lines(Age,get(grep("1_Act.mean",names(FIAagg),
+                       value = TRUE)[i]),type = "l")
+    # title(main = feat,line = -4)
+    legend('bottomleft',
+           legend = c(feat,grep("1_Act.mean",names(FIAagg),value=TRUE)[i])
+           ,col = colours,pch = 15,cex = 0.5)
+    par(yaxt='n');
+    if((i)%%5==0)
+    {
+      countR<-countR+1
+      countC<-0
+      par(yaxt='s',xaxt='n')
+    }
+  }
+})
+
   
 # Plot the dynamics of the clients values --------------------------------------------------------------
 
 par(plt=posPlot(),xaxt='s',yaxt='s')
-with(FIAraw[((Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0.2))&option=='RV'],{
-  plot(value_choice~Age,type='p',ylim=c(min(value_choice),max(value_choice)),
-       xlab='Trials',ylab='Estimated value',pch=20,cex=1,col=Type_choice+1)
-  points(value_discard~Age,pch=20,cex=1,col=Type_discard+1)
-  text(x=par('usr')[1]+(par('usr')[2]-par('usr')[1])*0.05,
-       y=par('usr')[3]+(par('usr')[4]-par('usr')[3])*0.05,
-       labels = bquote(tau==.(unique(Tau))))
+with(FIAraw[Training==0],{
+  plot(value~Age,type='p',
+       xlab='Trials',ylab='Estimated value',pch=20,cex=1,
+       col=coloptions[match(option,unique(option))])#
+legend('topleft',col =coloptions,legend = unique(option),pch =20,
+       ncol = 3,cex = 0.8)
+})
+
+FIAraw[,length(Age)/dim(FIAraw)[1],by=option]
+
+# Plot the dynamics of the preference --------------------------------------------------------------
+
+par(plt=posPlot(numplotx = 2,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[Training==0&option=="RV"],{
+  plot(logist(preference),type='p',
+       xlab='Trials',ylab='preference',pch=20,cex=1,
+       col=coloptions[match(option,unique(option))])
+  # legend('topright',col =coloptions,legend = unique(option),pch =20,
+  #        ncol = 3,cex = 0.8)
+})
+
+
+par(plt=posPlot(2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
+with(FIAraw[Training==0&option=="RV"],{
+  plot(Type_choice~Age,type='p',
+     xlab='Trials',ylab='Choice',pch=20,cex=1,xaxt='n',
+     col=coloptions[match(option,unique(option))])
+  axis(4)
+  # legend('topright',col =coloptions,legend = unique(option),pch =20,
+  #      ncol = 3,cex = 0.8)
+})
+
+FIAraw[(Training==0&option=="R0")&Type_choice==2,.(choice,Age)]
+
+
+
   text(x=par('usr')[1]+(par('usr')[2]-par('usr')[1])*0.05,
        y=par('usr')[3]+(par('usr')[4]-par('usr')[3])*0.1,
        labels=bquote(gamma==.(unique(Gamma))))

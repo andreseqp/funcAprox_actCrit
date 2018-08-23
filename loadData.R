@@ -13,9 +13,9 @@ getFilelist<-# reads de list of files and filters it according to a list of para
            values=NULL # list of values matching the list in 
                       # listparam
            ){
-  posAgen<-c("PIA","FIA","DP")
+  posAgen<-c("PIA","FIA")
   listRaw<-list.files(folder,recursive = TRUE)
-  fullList<-vector("list",3)
+  fullList<-vector("list",2)
   names(fullList)<-posAgen
   if(length(listparam)!=length(values)){
     # parameter and value lists must be the same length
@@ -49,11 +49,10 @@ getFilelist<-# reads de list of files and filters it according to a list of para
 
 
 
-loadRawData<-function(folder,agent,listparam,values)
+loadRawData<-function(folder,fullList)
 {
   setwd(folder)
-  fullList<-getFilelist(folder,listparam,values)
-  DT<-do.call(rbind,lapply(fullList[[agent]],fread))
+    DT<-do.call(rbind,lapply(fullList,fread))
   DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==0) | 
                    (DT$Type_choice==0 & DT$Type_discard==1),"RV",NA)
   DT$option<-ifelse((DT$Type_choice==0 & DT$Type_discard==0),"RR",DT$option)
@@ -111,7 +110,7 @@ file2timeInter<-function(filename,interV,maxAge=-2)
     tmp[fullRVoptions==TRUE,as.list(
       unlist(lapply(
         .SD,function(x) list(mean = mean(x),sd = sd(x))))),
-      by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr),
+      by=.(Interv=floor(Age/interV),Training,AlphaCri,AlphaAct,Gamma,Neta),
                     .SDcols=c("Type_choice",
                               grep("[[:digit:]]",names(tmp),value=TRUE))]
   if(length(extPar)>0){
@@ -138,8 +137,8 @@ file2lastDP<-function(filename)
 }
 
 
-soft_max<-function(x,y,t){
-  return(exp(x/t)/(exp(x/t)+exp(y/t)))
+logist<-function(x){
+  return(1/(1+exp(-x)))
 }
 
 diffJsons<-function(json1,json2){

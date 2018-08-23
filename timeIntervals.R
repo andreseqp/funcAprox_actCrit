@@ -1,7 +1,7 @@
 # --------------------------------- Time intervals -------------------------------------------------#
 
-projDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
-simsDir<-"s:/quinonesa/Simulations/functionAprox/General"
+projDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit//"
+simsDir<-"s:/quinonesa/Simulations/functionAprox/ActCrit/"
 
 # libraries ---------------------------------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
@@ -11,16 +11,17 @@ library('plotrix')
 
 # Load Data ---------------------------------------------------------------------------------------
 
+setwd(simsDir)
 
 # Define data to be loaded 
 
-(listPar<-c(rep("sds",3),"tau","gamma","neta"))
-(listVal<-c(1,3,5,10,0.8,0))
+(listPar<-c(rep("mHeight",3),"gamma","neta"))
+(listVal<-c(30,40,50,0.8,0))
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 diffJsons(param[1],param[3])
 
-list.files(simsDir,recursive = TRUE,pattern ="outb")
+list.files(simsDir)
 
 # Load interval data for FIA from the raw data
 FIAtimeInt<-rbindlist(lapply(
@@ -38,23 +39,14 @@ FIAtimeInt<-rbindlist(lapply(
 
 
 # Load interval data for PIA from the raw data
-PIAtimeInt<-rbindlist(lapply(
-    getFilelist(simsDir,listPar,listVal)$PIA,
-    file2timeInter,interV=1001))
+# PIAtimeInt<-rbindlist(lapply(
+#     getFilelist(simsDir,listPar,listVal)$PIA,
+#     file2timeInter,interV=1001))
 
 # Load PIA data from processed file
 
 # PIAtimeInt<-do.call(
 #   rbind,lapply(getFilelist(genDir,listPar,listVal)$PIA,fread))
-
-# Load DP data from the raw data
-DPdataProb<-rbindlist(lapply(getFilelist(simsDir,listPar,listVal)$DP,
-                             file2lastDP))
-
-# Load DP data from processed file
-
-# DPdataprob<-do.call(
-#   rbind,lapply(getFilelist(genDir,listPar,listVal)$DP,fread))
 
 # Plot the dynamics of VR choice -----------------------------------------------------------
 
@@ -63,29 +55,30 @@ extpar<-listPar[1]
 FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Type_choice.mean),
                            upIQR=fivenum(Type_choice.mean)[4],
                            lowIQR=fivenum(Type_choice.mean)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
+                        ,by=.(Interv,Neta,Gamma,get(extpar))]
 setnames(FIAIntstats,'get',extpar)
+
 PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Type_choice.mean),
                            upIQR=fivenum(Type_choice.mean)[4],
                            lowIQR=fivenum(Type_choice.mean)[2])
                         ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
 setnames(PIAIntstats,'get',extpar)
 
-par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
+FIAIntstats[,posit:=(get(extpar)-30)*0.02]
+PIAIntstats[,posit:=ifelse(Gamma==0&Neta==0,0,
+                           ifelse(Gamma==0.8&Neta==0,0.1,
+                                  ifelse(Gamma==0&Neta==1,0.2,0.3)))]
+
+par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',
+    las=1,xaxt='s')
 with(FIAIntstats,{
-  plotCI(x=Interv,y=meanProb,
+  plotCI(x=Interv+posit,y=meanProb,
          ui = upIQR,li=lowIQR,
          pch=16,xlab='',ylab='',
          col=colboxes[match(get(extpar),unique(get(extpar)))],
          sfrac=0.002,cex.axis=1.3)
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
 })
-with(DPdataProb,  
-     {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
-                                each=length(RV.V)),length(RV.V))),
-               y=t(matrix(rep(probRV.V,2),length(RV.V))),
-               lwd=2,lty = "dashed",
-               col=colboxes[match(get(extpar),unique(get(extpar)))])})
 
 legend('bottomright',
        legend=unique(FIAIntstats[,get(extpar)])[order(unique(FIAIntstats[,get(extpar)]))],

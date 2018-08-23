@@ -84,7 +84,7 @@ void draw(client trainingSet[], json param,
 	double rndNum;
 	json::iterator itSpsVis = param["visitors"].begin();
 	json::iterator itSpsRes = param["residents"].begin();
-	for (int i = 0; i < param["totRounds"] * 2; i++) {
+	for (int i = 0; i < param["totRounds"].get<int>() * 2; i++) {
 		rndNum = rnd::uniform();
 		if (rndNum < cumProbs[0]) {
 			string chosenSp = "Sp";
@@ -111,24 +111,22 @@ void draw(client trainingSet[], json param,
 string create_filename(std::string filename, agent &individual, 
 	nlohmann::json param) {
 	// name the file with the parameter specifications
-	filename.append("alph");
-	filename.append(douts(individual.getLearnPar(alphaPar)));
+	filename.append("alphC");
+	filename.append(douts(individual.getLearnPar(alphaCritPar)));
+	filename.append("alphA");
+	filename.append(douts(individual.getLearnPar(alphaActPar)));
 	filename.append("_gamma");
 	filename.append(douts(individual.getLearnPar(gammaPar)));
-	filename.append("_tau");
-	filename.append(douts(individual.getLearnPar(tauPar)));
 	filename.append("_neta");
 	filename.append(douts(individual.getLearnPar(netaPar)));
-	filename.append("_outb");
-	filename.append(douts(param["outbr"]));
 	filename.append("_seed");
-	filename.append(itos(param["seed"]));
+	filename.append(itos(param["seed"].get<int>()));
 	filename.append(".txt");
 	return(filename);
 }
 
 void initializeIndFile(ofstream &indOutput, agent &learner, 
-	nlohmann::json param, bool DP) {
+	nlohmann::json param) {
 	std::string namedir = param["folder"];
 	//"D:\\quinonesa\\Simulation\\functionAprox\\"; 
 	std::string namedirDP = param["folder"];
@@ -137,85 +135,67 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 	// "H:\\Dropbox\\Neuchatel\\prelimResults\\functionAprox\\"; 
 	// "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
 	std::string folder;
-	if(DP) {
-		folder = "\\DP";
-		folder.append("_");	
-	}
-	else {
-		folder = typeid(learner).name();
-		folder.erase(0, 6).append("_");
-		cout << folder << '\t' << learner.getLearnPar(alphaPar) << '\t';
-		cout << learner.getLearnPar(gammaPar) << '\t';
-		cout << learner.getLearnPar(tauPar) << '\t';
-		cout << learner.getLearnPar(netaPar) << endl;
-	}
+	
+	folder = typeid(learner).name();
+	folder.erase(0, 6).append("_");
+	cout << folder << '\t' << learner.getLearnPar(alphaCritPar) << '\t';
+	cout << learner.getLearnPar(alphaActPar) << '\t';
+	cout << learner.getLearnPar(gammaPar) << '\t';
+	cout << learner.getLearnPar(netaPar) << endl;
 	namedir.append(folder);
 	string IndFile = create_filename(namedir, learner, param);
 	indOutput.open(IndFile.c_str());
-	if(DP) {
-		indOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t';
-		indOutput << "Tau" << '\t' << "Neta" << '\t' << "Outbr" << '\t';
-		indOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t'; 
-		indOutput << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t';
-		indOutput << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
-		indOutput << endl;
+	
+	indOutput << "Training" << '\t' << "Age" << '\t' << "AlphaCri" << '\t';
+	indOutput << "AlphaAct" << '\t' << "Gamma" << '\t';
+	indOutput << "Neta" << '\t';
+	indOutput << "Current.Reward" << '\t';
+	indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
+	indOutput << "value" << '\t' << "preference" << '\t' << "choice" << '\t';
+	indOutput << "Type_choice" << '\t' << "Species_choice" << '\t';
+	indOutput << "Height_choice" << '\t' << "Length_choice" << '\t';
+	indOutput << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
+	indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t';
+	indOutput << "greenSec_choice" << '\t' << "blueSec_choice" << '\t';
+	indOutput << "secCol_choice" << '\t' << "strip_choice" << '\t';
+	indOutput << "dots_choice" << '\t';
+	indOutput << "Type_discard" << '\t' << "Species_discard" << '\t';
+	indOutput << "Height_discard" << '\t';
+	indOutput << "Length_discard" << '\t' << "redMain_discard" << '\t';
+	indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t';
+	indOutput << "redSec_discard" << '\t' << "greenSec_discard" << '\t';
+	indOutput << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
+	indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
+
+	if (learner.numEst > 11) {
+		indOutput << "Height_0_Crit" << '\t' << "Length_0_Crit" << '\t' << "redMain_0_Crit" << '\t';
+		indOutput << "greenMain_0_Crit" << '\t' << "blueMain_0_Crit" << '\t' << "redSec_0_Crit" << '\t';
+		indOutput << "greenSec_0_Crit" << '\t' << "blueSec_0_Crit" << '\t' << "secCol_0_Crit" << '\t';
+		indOutput << "strip_0_Crit" << '\t' << "dots_0_Crit" << '\t' << "Height_1_Crit" << '\t';
+		indOutput << "Length_1_Crit" << '\t' << "redMain_1_Crit" << '\t' << "greenMain_1_Crit" << '\t';
+		indOutput << "blueMain_1_Crit" << '\t' << "redSec_1_Crit" << '\t' << "greenSec_1_Crit" << '\t';
+		indOutput << "blueSec_1_Crit" << '\t' << "secCol_1_Crit" << '\t' << "strip_1_Crit" << '\t';
+		indOutput << "dots_1_Crit" << '\t';
+		indOutput << "Height_0_Act" << '\t' << "Length_0_Act" << '\t';
+		indOutput << "redMain_0_Act" << '\t' << "greenMain_0_Act" << '\t' << "blueMain_0_Act" << '\t';
+		indOutput << "redSec_0_Act" << '\t' << "greenSec_0_Act" << '\t' << "blueSec_0_Act" << '\t';
+		indOutput << "secCol_0_Act" << '\t' << "strip_0_Act" << '\t' << "dots_0_Act" << '\t';
+		indOutput << "Height_1_Act" << '\t' << "Length_1_Act" << '\t' << "redMain_1_Act" << '\t';
+		indOutput << "greenMain_1_Act" << '\t' << "blueMain_1_Act" << '\t';
+		indOutput << "redSec_1_Act" << '\t' << "greenSec_1_Act" << '\t' << "blueSec_1_Act" << '\t';
+		indOutput << "secCol_1_Act" << '\t' << "strip_1_Act" << '\t' << "dots_1_Act" << '\t';
 	}
 	else {
-		indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
-		indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
-		indOutput << "Outbr" << '\t' << "Current.Reward" << '\t';
-		indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
-		indOutput << "value_choice" << '\t' << "Type_choice" << '\t';
-		indOutput << "Height_choice" << '\t' << "Length_choice" << '\t';
-		indOutput << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
-		indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t';
-		indOutput << "greenSec_choice" << '\t' << "blueSec_choice" << '\t';
-		indOutput << "secCol_choice" << '\t' << "strip_choice" << '\t';
-		indOutput << "dots_choice" << '\t' << "value_discard" << '\t';
-		indOutput << "Type_discard" << '\t' << "Height_discard" << '\t';
-		indOutput << "Length_discard" << '\t' << "redMain_discard" << '\t';
-		indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t';
-		indOutput << "redSec_discard" << '\t' << "greenSec_discard" << '\t';
-		indOutput << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
-		indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
-
-		if (learner.numEst > 11) {
-			if (learner.numEst > 23) {
-				indOutput << "Height_1_0" << '\t' << "Length_1_0" << '\t' << "redMain_1_0" << '\t';
-				indOutput << "greenMain_1_0" << '\t' << "blueMain_1_0" << '\t' << "redSec_1_0" << '\t';
-				indOutput << "greenSec_1_0" << '\t' << "blueSec_1_0" << '\t' << "secCol_1_0" << '\t';
-				indOutput << "strip_1_0" << '\t' << "dots_1_0" << '\t' << "Height_2_0" << '\t';
-				indOutput << "Length_2_0" << '\t' << "redMain_2_0" << '\t' << "greenMain_2_0" << '\t';
-				indOutput << "blueMain_2_0" << '\t' << "redSec_2_0" << '\t' << "greenSec_2_0" << '\t';
-				indOutput << "blueSec_2_0" << '\t' << "secCol_2_0" << '\t' << "strip_2_0" << '\t';
-				indOutput << "dots_2_0" << '\t' << "Height_1_1" << '\t' << "Length_1_1" << '\t';
-				indOutput << "redMain_1_1" << '\t' << "greenMain_1_1" << '\t' << "blueMain_1_1" << '\t';
-				indOutput << "redSec_1_1" << '\t' << "greenSec_1_1" << '\t' << "blueSec_1_1" << '\t';
-				indOutput << "secCol_1_1" << '\t' << "strip_1_1" << '\t' << "dots_1_1" << '\t';
-				indOutput << "Height_2_1" << '\t' << "Length_2_1" << '\t' << "redMain_2_1" << '\t';
-				indOutput << "greenMain_2_1" << '\t' << "blueMain_2_1" << '\t';
-				indOutput << "redSec_2_1" << '\t' << "greenSec_2_1" << '\t' << "blueSec_2_1" << '\t';
-				indOutput << "secCol_2_1" << '\t' << "strip_2_1" << '\t' << "dots_2_1" << '\t';
-			}
-			else {
-				indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
-				indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t';
-				indOutput << "redSec_1" << '\t' << "greenSec_1" << '\t' << "blueSec_1" << '\t';
-				indOutput << "secCol_1" << '\t' << "strip_1" << '\t' << "dots_1" << '\t';
-				indOutput << "Height_2" << '\t' << "Length_2" << '\t' << "redMain_2" << '\t';
-				indOutput << "greenMain_2" << '\t' << "blueMain_2" << '\t' << "redSec_2" << '\t';
-				indOutput << "greenSec_2" << '\t' << "blueSec_2" << '\t' << "secCol_2" << '\t';
-				indOutput << "strip_2" << '\t' << "dots_2" << '\t' << "featChoice";
-			}
-		}
-		else {
-			indOutput << "Height_1" << '\t' << "Length_1" << '\t' << "redMain_1" << '\t';
-			indOutput << "greenMain_1" << '\t' << "blueMain_1" << '\t' << "redSec_1" << '\t';
-			indOutput << "greenSec_1" << '\t' << "blueSec_1" << '\t' << "secCol_1" << '\t';
-			indOutput << "strip_1" << '\t' << "dots_1" << '\t';
-		}
-		indOutput << endl;
+		indOutput << "Height_Crit" << '\t' << "Length_Crit" << '\t' << "redMain_Crit" << '\t';
+		indOutput << "greenMain_Crit" << '\t' << "blueMain_Crit" << '\t' << "redSec_Crit" << '\t';
+		indOutput << "greenSec_Crit" << '\t' << "blueSec_Crit" << '\t' << "secCol_Crit" << '\t';
+		indOutput << "strip_Crit" << '\t' << "dots_Crit" << '\t';
+		indOutput << "Height_Act" << '\t' << "Length_Act" << '\t' << "redMain_Act" << '\t';
+		indOutput << "greenMain_Act" << '\t' << "blueMain_Act" << '\t' << "redSec_Act" << '\t';
+		indOutput << "greenSec_Act" << '\t' << "blueSec_Act" << '\t' << "secCol_Act" << '\t';
+		indOutput << "strip_Act" << '\t' << "dots_Act" << '\t';
 	}
+	indOutput << endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[]) {
@@ -228,7 +208,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 	/*json param;
 
-	param["totRounds"] = 10;
+	param["totRounds"] = 1000;
 	param["ResReward"] = 10;
 	param["VisReward"] = 10;
 	param["ResProb"] = 0.2;
@@ -239,15 +219,15 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	param["experiment"] = false;
 	param["inbr"] = 0;
 	param["outbr"] = 0;
-	param["trainingRep"] = 1;
-	param["alphaT"] = 1e-005;
+	param["trainingRep"] = 5;
+	param["alphaCrit"] = 1e-005;
+	param["alphaAct"] = 1e-005;
 	param["printGen"] = 1;
 	param["seed"] = 1;
 	param["gammaRange"] = { 0, 0.8 };
-	param["tauRange"] = { 5, 10 },
-		param["netaRange"] = { 0, 0.5 };
+	param["netaRange"] = { 0, 0.5 };
 	param["mins"] = { 10, 10 };
-	param["folder"] = "S:/quinonesa/Simulations/functionAprox/General/mHeightC30_/";
+	param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
 	param["visitors"]["Sp1"]["means"] = { 30, 20, 40, 40, 40, 40, 40, 40 };
 	param["visitors"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
 	param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
@@ -257,9 +237,10 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	param["residents"]["Sp1"]["probs"] = { 0, 1, 1 };
 	param["residents"]["Sp1"]["relAbun"] = 1;*/
 	
-	const int numlearn = 2;
 	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
+
+	const int numlearn = 1;
 
 	rnd::set_seed(param["seed"].get<int>());
 	rnd::discrete_distribution residSpProbs = clientProbs(param, "residents");
@@ -276,48 +257,30 @@ int _tmain(int argc, _TCHAR* argv[]) {
 		itn != param["netaRange"].end(); ++itn) {
 		for (json::iterator itg = param["gammaRange"].begin(); 
 			itg != param["gammaRange"].end(); ++itg) {
-			for (json::iterator itt = param["tauRange"].begin(); 
-				itt != param["tauRange"].end(); ++itt) {
-				ofstream printTest;
-				ofstream DPprint;
-				learners[0] = new FIATy2(param["alphaT"].get<double>(),
-					*itg, *itt, *itn);
-				learners[1] = new PIATy2(param["alphaT"].get<double>(),
-					*itg, *itt, *itn);
-				for (int k = 0; k < numlearn; ++k) {
-					initializeIndFile(printTest, *learners[k], param,0);
-					for (int i = 0; i < param["trainingRep"].get<int>(); 
-						i++) {
-						draw(clientSet, param, visitSpProbs,residSpProbs);
-						idClientSet = 0;
-						for (int j = 0; j < param["totRounds"].get<int>(); j++) {
-							cout << "Round= " << j << endl;
-							learners[k]->act(clientSet, idClientSet, param,
-								visitSpProbs, residSpProbs);
-							learners[k]->updateDerived();
-							if (j % param["printGen"].get<int>() == 0) {
-								learners[k]->printIndData(printTest, i);
-							}
+			ofstream printTest;
+			ofstream DPprint;
+			learners[0] = new FIATy1(param["alphaCrit"].get<double>(),
+				param["alphaAct"].get<double>(),*itg, *itn);
+			/*learners[1] = new PIATy2(param["alphaT"].get<double>(),
+				*itg, *itt, *itn);*/
+			for (int k = 0; k < numlearn; ++k) {
+				initializeIndFile(printTest, *learners[k], param);
+				for (int i = 0; i < param["trainingRep"].get<int>(); 
+					i++) {
+					draw(clientSet, param, visitSpProbs,residSpProbs);
+					idClientSet = 0;
+					for (int j = 0; j < param["totRounds"].get<int>(); j++) {
+						learners[k]->act(clientSet, idClientSet, param,
+							visitSpProbs, residSpProbs);
+						learners[k]->updateDerived();
+						if (j % param["printGen"].get<int>() == 0) {
+							learners[k]->printIndData(printTest, i);
 						}
-						learners[k]->rebirth();
 					}
-					printTest.close();
-					if (k == 0) {
-						initializeIndFile(DPprint, *learners[0], param, 1);
-						learners[k]->DPupdate(param["ResProb"].get<double>(), 
-							param["VisProb"].get<double>(), 
-							param["VisProbLeav"].get<double>(), 
-							param["ResProbLeav"].get<double>(), 
-							param["outbr"].get<double>(),
-							param["ResReward"].get<double>(), 
-							param["VisReward"].get<double>(), 
-							param["negativeRew"].get<double>(), DPprint, 
-							param["experiment"].get<bool>());
-						DPprint.close();
-					}					
-					delete learners[k];
+					learners[k]->rebirth();
 				}
-
+				printTest.close();
+				delete learners[k];
 			}
 		}
 	}

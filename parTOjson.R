@@ -2,21 +2,22 @@
 
 library("jsonlite")
 
-projDir<-"D:\\quinonesa\\learning_models_c++\\functionAprox"
+projDir<-"D:\\quinonesa\\learning_models_c++\\functAprox_actCrit"
 
-simsDir<-"S:/quinonesa/Simulations/functionAprox/General"
+simsDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit"
 
-exedir<-paste(codedir,'/./FunctionAproxSarsa.exe',sep='')
+exedir<-paste(projDir,'/./FunctionAproxSarsa.exe',sep='')
 
 fileName<-"parameters.json"
 
 
 #test<-fromJSON(paste(codedir,"\\test.json",sep=""))
 
-param<-list(totRounds=60000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
+param<-list(totRounds=10000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
-            inbr=0,outbr=0,trainingRep=30,
-            alphaT=0.00001,printGen=1,seed=1, gammaRange=c(0,0.8),
+            inbr=0,outbr=0,trainingRep=5,
+            alphaCrit=0.00001,alphaAct=0.00001,printGen=1,seed=1, 
+            gammaRange=c(0,0.8),
             tauRange=c(5,10),netaRange=c(0,0.5),mins=c(10,10),
             folder=simsDir)
 
@@ -54,7 +55,7 @@ check_create.dir<-function(folder,param,values){
 }
 
 
-listfolders<-check_create.dir(simsdir,rep("mHeightC",3),rang)
+listfolders<-check_create.dir(simsdir,rep("mHeight",3),rang)
 
 for (i in 1:3) {
   param$visitors$Sp1$means[1] <-rang[i]

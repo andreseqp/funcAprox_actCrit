@@ -1,8 +1,8 @@
 # Data manipulation -----------------------------------------------------------------
 
 # Directories --------------------------------------------------------------
-simsDir<-"s:/quinonesa/Simulations/functionAprox/General/"
-projDir<-"d:/quinonesa/learning_models_c++/functionAprox/"
+simsDir<-"s:/quinonesa/Simulations/functionAprox/ActCrit/"
+projDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
 
 
 # libraries ----------------------------------------------------------------

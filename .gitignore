@@ -2,10 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-CleanFuncAprox.exe
-CleanFuncAprox.iobj
-CleanFuncAprox.ipdb
-CleanFuncAprox.pdb
+funcAprox_actCrit.exe
+funcAprox_actCrit.iobj
+funcAprox_actCrit.ipdb
+funcAprox_actCrit.pdb
 ./outb0.1_/FIA.timeInt.1001.txt
 ./outb0.2_/FIA.timeInt.1001.txt
 ./outb0_/FIA.timeInt.1001.txt
