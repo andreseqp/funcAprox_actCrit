@@ -49,10 +49,14 @@ getFilelist<-# reads de list of files and filters it according to a list of para
 
 
 
-loadRawData<-function(folder,fullList)
+loadRawData<-function(filename,folder)
 {
   setwd(folder)
-    DT<-do.call(rbind,lapply(fullList,fread))
+  extPar<-strsplit(filename,split ="_/")[[1]][1]
+  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
+  extPar<-gsub(parVal,extPar,replacement = '')
+  DT<-fread(filename)
+    # do.call(rbind,lapply(fullList,fread))
   DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==0) | 
                    (DT$Type_choice==0 & DT$Type_discard==1),"RV",NA)
   DT$option<-ifelse((DT$Type_choice==0 & DT$Type_discard==0),"RR",DT$option)
@@ -62,7 +66,9 @@ loadRawData<-function(folder,fullList)
   DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==2) | 
                    (DT$Type_choice==2 & DT$Type_discard==1),"V0",DT$option)
   DT$option<-ifelse((DT$Type_choice==2 & DT$Type_discard==2),"00",DT$option)
-  
+  if(length(extPar)>0){
+    DT[,eval(extPar):=parVal]
+  }
   return(DT)
 }
 
@@ -121,19 +127,32 @@ file2timeInter<-function(filename,interV,maxAge=-2)
 }
 
 
-file2lastDP<-function(filename)
+file2timeInterValue<-function(filename,interV,maxAge=-2)
 {
   extPar<-strsplit(filename,split ="_/")[[1]][1]
   parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
-  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
-  tmp<-fread(filename)
-  tmpProbsDP<-tmp[Time==max(Time),
-                  .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
-                  by=.(Alpha,Gamma,Tau,Neta,Outbr)]
+  extPar<-gsub(parVal,extPar,replacement = '')
+  tmp<-fread(filename,nrows = maxAge+1)
+  tmp$option<-ifelse((tmp$Type_choice==1 & tmp$Type_discard==0) | 
+                      (tmp$Type_choice==0 & tmp$Type_discard==1),"RV",NA)
+  tmp$option<-ifelse((tmp$Type_choice==0 & tmp$Type_discard==0),"RR",tmp$option)
+  tmp$option<-ifelse((tmp$Type_choice==1 & tmp$Type_discard==1),"VV",tmp$option)
+  tmp$option<-ifelse((tmp$Type_choice==0 & tmp$Type_discard==2) | 
+                      (tmp$Type_choice==2 & tmp$Type_discard==0),"R0",tmp$option)
+  tmp$option<-ifelse((tmp$Type_choice==1 & tmp$Type_discard==2) | 
+                      (tmp$Type_choice==2 & tmp$Type_discard==1),"V0",tmp$option)
+  tmp$option<-ifelse((tmp$Type_choice==2 & tmp$Type_discard==2),"00",tmp$option)
+  tmptimeInter<-
+    tmp[,.(value.m=mean(value),value.sd=sd(value),
+           preference.m=mean(preference),
+           preference.sd=sd(preference),
+           type_choice.m=mean(Type_choice)),
+      by=.(Interv=floor(Age/interV),Training,
+           AlphaCri,AlphaAct,Gamma,Neta,option),]
   if(length(extPar)>0){
-    tmpProbsDP[,eval(extPar):=parVal]
+    tmptimeInter[,eval(extPar):=parVal]
   }
-  return(tmpProbsDP)
+  return(tmptimeInter)
 }
 
 

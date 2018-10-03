@@ -87,9 +87,8 @@ client::client(client_ty type, std::vector<double> means, std::vector<double> sd
 		for (size_t i = 0; i < 8; i++) {
 			featQuant[i] = rnd::normal(means[i], sds[i]);
 			if (i < 1) { clip_low(featQuant[i], mins[i]); }
-			else { clip_range(featQuant[i],0,255); }
+			else { clip_range(featQuant[i], 0, 255); }
 			if (i < 3) { featBool[i] = rnd::bernoulli(probs[i]); }
-						
 		}
 		/*heigth = rnd::normal(msdHeight[0], msdHeight[1]), length = rnd::normal(msdLength[0], msdLength[1]), mainRed = rnd::normal(mMainRGB[0],sdMainRGB[0]);
 		mainGreen = rnd::normal(mMainRGB[1],sdMainRGB[1]), mainBlue = rnd::normal(mMainRGB[2],sdMainRGB[2]), stripes = rnd::bernoulli(pStripes), dots = rnd::bernoulli(pDots);
@@ -139,6 +138,9 @@ void client::printClientData(std::ofstream &learnSeries) {
 	learnSeries << species << '\t';
 	for (size_t i = 0; i < 8; i++) {
 		learnSeries << featQuant[i] << '\t';
+		if (featQuant[i] > 100) {
+			std::cout << i << '\t' << featQuant[i];
+		}
 	}
 	for (size_t i = 0; i < 3; i++) {
 		learnSeries << featBool[i] << '\t';

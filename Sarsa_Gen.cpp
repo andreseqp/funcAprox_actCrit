@@ -113,7 +113,7 @@ string create_filename(std::string filename, agent &individual,
 	// name the file with the parameter specifications
 	filename.append("alphC");
 	filename.append(douts(individual.getLearnPar(alphaCritPar)));
-	filename.append("alphA");
+	filename.append("_alphA");
 	filename.append(douts(individual.getLearnPar(alphaActPar)));
 	filename.append("_gamma");
 	filename.append(douts(individual.getLearnPar(gammaPar)));
@@ -206,36 +206,36 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
-	/*json param;
+	//json param;
 
-	param["totRounds"] = 1000;
-	param["ResReward"] = 10;
-	param["VisReward"] = 10;
-	param["ResProb"] = 0.2;
-	param["VisProb"] = 0.2;
-	param["ResProbLeav"] = 0;
-	param["VisProbLeav"] = 1;
-	param["negativeRew"] = -10;
-	param["experiment"] = false;
-	param["inbr"] = 0;
-	param["outbr"] = 0;
-	param["trainingRep"] = 5;
-	param["alphaCrit"] = 1e-005;
-	param["alphaAct"] = 1e-005;
-	param["printGen"] = 1;
-	param["seed"] = 1;
-	param["gammaRange"] = { 0, 0.8 };
-	param["netaRange"] = { 0, 0.5 };
-	param["mins"] = { 10, 10 };
-	param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
-	param["visitors"]["Sp1"]["means"] = { 30, 20, 40, 40, 40, 40, 40, 40 };
-	param["visitors"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
-	param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
-	param["visitors"]["Sp1"]["relAbun"] = 1;
-	param["residents"]["Sp1"]["means"] = { 20, 30, 40, 40, 40, 40, 40, 40 };
-	param["residents"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
-	param["residents"]["Sp1"]["probs"] = { 0, 1, 1 };
-	param["residents"]["Sp1"]["relAbun"] = 1;*/
+	//param["totRounds"] = 1000;
+	//param["ResReward"] = 10;
+	//param["VisReward"] = 10;
+	//param["ResProb"] = 0.2;
+	//param["VisProb"] = 0.2;
+	//param["ResProbLeav"] = 0;
+	//param["VisProbLeav"] = 1;
+	//param["negativeRew"] = -10;
+	//param["experiment"] = false;
+	//param["inbr"] = 0;
+	//param["outbr"] = 0;
+	//param["trainingRep"] = 5;
+	//param["alphaCrit"] = 1e-005;
+	//param["alphaAct"] = 1e-005;
+	//param["printGen"] = 1;
+	//param["seed"] = 1;
+	//param["gammaRange"] = { 0, 0.8 };
+	//param["netaRange"] = { 0, 0.5 };
+	//param["mins"] = { 10, 10 };
+	//param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
+	//param["visitors"]["Sp1"]["means"] = { 17, 38, 28,  8, 47, 47,  6, 41, };
+	//param["visitors"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
+	//param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
+	//param["visitors"]["Sp1"]["relAbun"] = 1;
+	//param["residents"]["Sp1"]["means"] = { 28, 31, 27, 11, 38,  9, 20, 42 };
+	//param["residents"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
+	//param["residents"]["Sp1"]["probs"] = { 0, 1, 1 };
+	//param["residents"]["Sp1"]["relAbun"] = 1;
 	
 	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
