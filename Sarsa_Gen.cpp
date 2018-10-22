@@ -91,16 +91,14 @@ void draw(client trainingSet[], json param,
 			chosenSp.append(itos(residSpProb.sample() + 1));
 			trainingSet[i] = client(resident,param["residents"][chosenSp]["means"],
 				param["residents"][chosenSp]["sds"],
-				mins, param["residents"][chosenSp]["probs"],
-				param["ResReward"].get<double>(),chosenSp);
+				mins, param["ResReward"].get<double>(),chosenSp);
 		}
 		else if (rndNum < cumProbs[1]) { 
 			string chosenSp = "Sp";
 			chosenSp.append(itos(visitSpProb.sample()+1));
 			trainingSet[i] = client(visitor, param["visitors"][chosenSp]["means"],
 				param["visitors"][chosenSp]["sds"],
-				mins, param["visitors"][chosenSp]["probs"],
-				param["ResReward"].get<double>(), chosenSp);
+				mins, param["ResReward"].get<double>(), chosenSp);
 		}
 		else { 
 			trainingSet[i] = client(); 
@@ -154,20 +152,13 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 	indOutput << "value" << '\t' << "preference" << '\t' << "choice" << '\t';
 	indOutput << "Type_choice" << '\t' << "Species_choice" << '\t';
 	indOutput << "Height_choice" << '\t' << "Length_choice" << '\t';
-	indOutput << "redMain_choice" << '\t' << "greenMain_choice" << '\t';
-	indOutput << "blueMain_choice" << '\t' << "redSec_choice" << '\t';
-	indOutput << "greenSec_choice" << '\t' << "blueSec_choice" << '\t';
-	indOutput << "secCol_choice" << '\t' << "strip_choice" << '\t';
-	indOutput << "dots_choice" << '\t';
+	indOutput << "redMain_choice" << '\t';
 	indOutput << "Type_discard" << '\t' << "Species_discard" << '\t';
 	indOutput << "Height_discard" << '\t';
 	indOutput << "Length_discard" << '\t' << "redMain_discard" << '\t';
-	indOutput << "greenMain_discard" << '\t' << "blueMain_discard" << '\t';
-	indOutput << "redSec_discard" << '\t' << "greenSec_discard" << '\t';
-	indOutput << "blueSec_discard" << '\t' << "secCol_discard" << '\t';
-	indOutput << "strip_discard" << '\t' << "dots_discard" << '\t';
+	indOutput << endl;
 
-	if (learner.numEst > 11) {
+	/*if (learner.getNfeat() > 11) {
 		indOutput << "Height_0_Crit" << '\t' << "Length_0_Crit" << '\t' << "redMain_0_Crit" << '\t';
 		indOutput << "greenMain_0_Crit" << '\t' << "blueMain_0_Crit" << '\t' << "redSec_0_Crit" << '\t';
 		indOutput << "greenSec_0_Crit" << '\t' << "blueSec_0_Crit" << '\t' << "secCol_0_Crit" << '\t';
@@ -195,46 +186,42 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 		indOutput << "greenSec_Act" << '\t' << "blueSec_Act" << '\t' << "secCol_Act" << '\t';
 		indOutput << "strip_Act" << '\t' << "dots_Act" << '\t';
 	}
-	indOutput << endl;
+	indOutput << endl;*/
 }
 
 int _tmain(int argc, _TCHAR* argv[]) {
 
 	ifstream input(argv[1]);
-	//ifstream input("D:\\quinonesa\\learning_models_c++\\functionAprox\\test.json");
-	//ifstream input("D:\\quinonesa\\Simulation\\functionAprox\\out_0\\parameters.json");
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
 	//json param;
-
 	//param["totRounds"] = 1000;
-	//param["ResReward"] = 10;
-	//param["VisReward"] = 10;
+	//param["ResReward"] = 1;
+	//param["VisReward"] = 1;
 	//param["ResProb"] = 0.2;
 	//param["VisProb"] = 0.2;
 	//param["ResProbLeav"] = 0;
 	//param["VisProbLeav"] = 1;
-	//param["negativeRew"] = -10;
+	//param["negativeRew"] = -0.5;
 	//param["experiment"] = false;
 	//param["inbr"] = 0;
 	//param["outbr"] = 0;
 	//param["trainingRep"] = 5;
-	//param["alphaCrit"] = 1e-005;
-	//param["alphaAct"] = 1e-005;
+	//param["alphaCrit"] = 0.001;
+	//param["alphaAct"] = 0.001;
 	//param["printGen"] = 1;
 	//param["seed"] = 1;
 	//param["gammaRange"] = { 0, 0.8 };
-	//param["netaRange"] = { 0, 0.5 };
+	//param["netaRange"] = { false, true };
 	//param["mins"] = { 10, 10 };
 	//param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
-	//param["visitors"]["Sp1"]["means"] = { 17, 38, 28,  8, 47, 47,  6, 41, };
-	//param["visitors"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
+	//param["visitors"]["Sp1"]["means"] = { 17, 38, 28};
+	//param["visitors"]["Sp1"]["sds"] = { 3, 3, 3};
 	//param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
 	//param["visitors"]["Sp1"]["relAbun"] = 1;
-	//param["residents"]["Sp1"]["means"] = { 28, 31, 27, 11, 38,  9, 20, 42 };
-	//param["residents"]["Sp1"]["sds"] = { 3, 3, 3, 3, 3, 3, 3, 3 };
-	//param["residents"]["Sp1"]["probs"] = { 0, 1, 1 };
+	//param["residents"]["Sp1"]["means"] = { 28, 31, 27};
+	//param["residents"]["Sp1"]["sds"] = { 3, 3, 3};
 	//param["residents"]["Sp1"]["relAbun"] = 1;
 	
 	
@@ -272,7 +259,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 					for (int j = 0; j < param["totRounds"].get<int>(); j++) {
 						learners[k]->act(clientSet, idClientSet, param,
 							visitSpProbs, residSpProbs);
-						learners[k]->updateDerived();
+						learners[k]->update();
 						if (j % param["printGen"].get<int>() == 0) {
 							learners[k]->printIndData(printTest, i);
 						}

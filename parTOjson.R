@@ -15,21 +15,19 @@ fileName<-"parameters.json"
 
 
 
-param<-list(totRounds=20000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
-            inbr=0,outbr=0,trainingRep=30,
-            alphaCrit=0.00001,alphaAct=0.00001,printGen=1,seed=1, 
+param<-list(totRounds=1000000,ResReward=1,VisReward=1,ResProb=0.2,VisProb=0.2,
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
+            inbr=0,outbr=0,trainingRep=10,
+            alphaCrit=0.01,alphaAct=0.01,printGen=1,seed=1, 
             gammaRange=c(0,0.8),
-            tauRange=c(5,10),netaRange=c(0,0.5),mins=c(10,10),
+            tauRange=c(5,10),netaRange=c(FALSE,TRUE),mins=c(10,10),
             folder=simsDir)
 
-param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
-param$visitors$Sp1$sds<-rep(1,8)
-param$visitors$Sp1$probs<-rep(1,3)
+param$visitors$Sp1$means<-c(30,20,40)
+param$visitors$Sp1$sds<-rep(1,3)
 param$visitors$Sp1$relAbun=1
-param$residents$Sp1$means<-c(20,30,40,40,40,40,40,40)
-param$residents$Sp1$sds<-rep(1,8)
-param$residents$Sp1$probs<-c(1,1,1)
+param$residents$Sp1$means<-c(20,30,40)
+param$residents$Sp1$sds<-rep(1,3)
 param$residents$Sp1$relAbun=1
 
 set.seed(2)
@@ -58,21 +56,20 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
-rang<-c(1,2,3,4,5,6,7,8,9)
-listfolders<-check_create.dir(simsdir,rep("rdNumSP",length(rang)),rang)
+rangSp<-c(1,2,3,4,5,6,7,8,9)
+rang<-""
+listfolders<-check_create.dir(simsdir,rep("TestRBF",length(rang)),rang)
 
 for (i in 1:1) {
   param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')
-  for(newSp in 1:rang[i]){
+  for(newSp in 1:rangSp[9]){
     param$visitors[[newSp]]<-
-      list(means=c(floor(runif(min = 10,max = 50,n = 2)),
-                   floor(runif(min = 0,max = 50,n = 6))),
-           sds=rep(1,8),probs=rep(1,3),relAbun=1)
+      list(means=floor(runif(min = 0,max = 100,n = 3)),
+           sds=rep(1,3),relAbun=1)
     names(param$visitors)[newSp]<-paste("Sp",newSp,sep = "")
     param$residents[[newSp]]<-
-      list(means=c(floor(runif(min = 10,max = 50,n = 2)),
-                   floor(runif(min = 0,max = 50,n = 6))),
-           sds=rep(1,8),probs=rep(1,3),relAbun=1)
+      list(means=floor(runif(min = 0,max = 100,n = 3)),
+           sds=rep(1,3),relAbun=1)
     names(param$residents)[newSp]<-paste("Sp",newSp,sep = "")
   }
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)

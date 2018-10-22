@@ -10,15 +10,18 @@ source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(scriptDir,"aesth_par.R",sep=""))
 source(paste(scriptDir,"loadData.R",sep = ""))
 library('plotrix')
-library('lme4')
+
 
 
 # Load data ------------------------------------------------------------
 
 setwd(genDir)
 
-(listPar<-c(rep("rdNumSP",8),"gamma","neta"))
-(listVal<-c(2,3,4,5,6,7,8,9,0.8,0))
+(listPar<-c("TestRBF","gamma","neta"))
+(listVal<-c("",0,0))
+
+(listPar<-c("rdNumSP","gamma","neta"))
+(listVal<-c(9,0,0))
 
 
 FIAraw<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
@@ -69,8 +72,8 @@ FIAraw[,length(Age)/dim(FIAraw)[1],by=option]
 
 # Plot the dynamics of the preference --------------------------------------------------------------
 
-par(plt=posPlot(numplotx = 2,idplotx = 1),xaxt='s',yaxt='s')
-with(FIAraw[Training==idRep],{
+par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[Training==idRep&Age<1000],{
   plot(preference,type='p',
        xlab='Trials',pch=20,cex=1,
        col=coloptions[match(option,unique(option))])
@@ -78,7 +81,7 @@ with(FIAraw[Training==idRep],{
          ncol = 3,cex = 0.8)
 })
 
-par(plt=posPlot(numplotx = 2,idplotx = 1),xaxt='s',yaxt='s')
+par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
 with(FIAraw[Training==idRep],{
   plot(logist(preference),type='p',
        xlab='Trials',pch=20,cex=1,

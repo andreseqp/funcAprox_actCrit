@@ -19,13 +19,10 @@ class agent {
 	// Learning agent
 public:
 	agent(double alphaCI, double alphaAI, double gammaI, bool netaI, 
-		double InitVal);
+		int numCenterspDimI, double sigmaSqI);
 	// constructor providing values for the learning parameters
 	virtual ~agent();
 	// destructor not really necessary
-	void updateClient(int &countWeights, int clientId);
-	// function that updates the value of state-action pairs accosrding to 
-	// current reward and estimates of future values
 	void act(client newOptions[], int &idNewOptions, nlohmann::json param,
 		rnd::discrete_distribution visitSpProb,
 		rnd::discrete_distribution residSpProb);
@@ -38,7 +35,7 @@ public:
 	void checkChoice();
 	// Check that the choice taken is among one of the options, 
 	// otherwise trigger an error
-	void rebirth(double InitVal);
+	void rebirth();
 	// Function to reset private variables in an individual
 	void getExternalOptions(client newOptions[], int &idNewOptions, 
 		nlohmann::json param,
@@ -46,18 +43,23 @@ public:
 		rnd::discrete_distribution residSpProb);
 	// After unattended clinets leave or stay, get new clients
 	void ObtainReward();
-	double linearComClient(int clientid, int &countFeat,
-		double featWeights[]);
-	// Use linear combinations of features to calculate either value or preference
+	double agent::RBF(double featWeights[]);
+	// Use a set of features that cover the multidimentional space to produce a
+	// an estimate of value and preference
 	double logist(double diffPref);
 	// Use the preference to calculate the probability of choosing 
 	// the first (0) client
+	void update();
 	void getNewOptions(client newOptions[], int &idNewOptions, 
 		nlohmann::json param, rnd::discrete_distribution visitSpProb,
 		rnd::discrete_distribution residSpProb);
 	void getExperimentalOptions(nlohmann::json param,
 		rnd::discrete_distribution visitSpProb,
 		rnd::discrete_distribution residSpProb);
+	void agent::calcResponses();
+	int getNfeat() {
+		return(nFeat);
+	}
 	// function to obtain options as in an experimental trial
 	client cleanOptionsT[2];		
 	// current cleaning options time = t
@@ -70,17 +72,17 @@ public:
 	virtual double preference() = 0;
 	// Calculates the preference for chosing the first (0) client.
 	virtual void choice() = 0;
-	virtual void updateDerived() = 0;
-	int numEst;							
-	// Number of estimates characterizing bhavioural options
 	//void (agent::*pointGNO)(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward) = NULL;                // C++
 protected:
-	double featWeightsCrit[22];
+	double featWeightsCrit[729];
 	// vector of weights to fit the state-action value function. 
 	// Each corresponds to one feature of the client
-	double featWeightsAct[22];
+	double featWeightsAct[729];
 	// vector of weights to fit the state-action value function. 
 	// Each corresponds to one feature of the client
+	double centers[729][6];
+	double responsesT[729];
+	double responsesT1[729];
 	double valuesT;
 	// value estimated for current state
 	double valuesT1;
@@ -100,6 +102,11 @@ protected:
 	int age;
 	double negReward;
 private:
+	int nFeat;
+	double sigmaSq;
+	// degree of generalization
+	int numCenterspDim;
+	// number of features per morphological dimension
 	double alphaCrit;
 	// speed of learning for the critic
 	double alphaAct;
@@ -112,25 +119,48 @@ private:
 // Members of agent class
 
 agent::agent(double alphaCI=0.01, double alphaAI=0.01, 
-	double gammaI=0.5, bool netaI=0,double InitVal=0) {
+	double gammaI=0.5, bool netaI=0, int numCenterspDimI=3, 
+	double sigmaSqI=100) {
 	// parameterized constructor
-	numEst = 22;
 	client noClient = client();
-	for (int i = 0; i < numEst; i++) {
-		featWeightsCrit[i] = 0;
-		featWeightsAct[i] = 0;
+	numCenterspDim = numCenterspDimI;
+	nFeat = numCenterspDim ^ 6;
+	double interv = 100 / (numCenterspDim+1);
+	int cfeat = 0;
+	for (int a = 1; a <= numCenterspDim; ++a) {
+		for (int b = 1; b <= numCenterspDim; ++b) {
+			for (int c = 1; c <= numCenterspDim; ++c){
+				for (int d = 1; d <= numCenterspDim; d++){
+					for (int e = 1; e <= numCenterspDim; e++) {
+						for (int f = 1; f <= numCenterspDim; f++) {
+							featWeightsCrit[cfeat] = 0;
+							featWeightsAct[cfeat] = 0;
+							centers[cfeat][0] = a*interv;
+							centers[cfeat][1] = b*interv;
+							centers[cfeat][2] = c*interv;
+							centers[cfeat][3] = d*interv;
+							centers[cfeat][4] = e*interv;
+							centers[cfeat][5] = f*interv;
+							++cfeat;
+						}
+					}
+				}
+
+			}
+		}
 	}
-	//values[4] = 10, values[2] = 10;
 	alphaCrit = alphaCI, alphaAct = alphaAI, gamma = gammaI, neta = netaI;
+	sigmaSq = sigmaSqI;
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
 	cleanOptionsT1[0] = noClient, cleanOptionsT1[1] = noClient, choiceT1 = 0;  
 	valuesT = 0, valuesT1 = 0;
 	prefT = 0, prefT1= 0;
 	currentReward = 0, cumulReward = 0, negReward = 0;
 	age = 0;
+	nFeat = 729;
 }
 
-void agent::rebirth(double InitVal=0) {
+void agent::rebirth() {
 	age = 0;
 	client noClient = client();
 	cleanOptionsT[0] = noClient, cleanOptionsT[1] = noClient, choiceT = 2;
@@ -140,11 +170,10 @@ void agent::rebirth(double InitVal=0) {
 	currentReward = 0;
 	cumulReward = 0;
 	negReward = 0;
-	for (int i = 0; i < numEst; i++) {
+	for (int i = 0; i < nFeat; i++) {
 		featWeightsCrit[i] = 0;
 		featWeightsAct[i] = 0;
 	}
-	//values[4] = 10, values[2] = 10;
 }
 
 agent::~agent() {}		
@@ -264,8 +293,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(resident,
 					param["residents"][chosenSp]["means"],
 					param["residents"][chosenSp]["sds"],
-					mins, param["residents"][chosenSp]["probs"],
-					param["ResReward"].get<double>(),chosenSp);
+					mins, param["ResReward"].get<double>(),chosenSp);
 			}
 			else {
 				std::string chosenSp = "Sp";
@@ -273,8 +301,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(visitor,
 					param["visitors"][chosenSp]["means"],
 					param["visitors"][chosenSp]["sds"],
-					mins, param["visitors"][chosenSp]["probs"],
-					param["VisReward"].get<double>(),chosenSp);
+					mins, param["VisReward"].get<double>(),chosenSp);
 			}				
 		}
 		else {
@@ -285,7 +312,6 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(visitor,
 					param["visitors"][chosenSp]["means"],
 					param["visitors"][chosenSp]["sds"], mins, 
-					param["visitors"][chosenSp]["probs"],
 					param["VisReward"].get<double>(),chosenSp);
 			}
 			else { 
@@ -294,8 +320,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(resident,
 					param["residents"][chosenSp]["means"], 
 					param["residents"][chosenSp]["sds"],
-					mins, param["residents"][chosenSp]["probs"],
-					param["ResReward"].get<double>(), chosenSp); }
+					mins, param["ResReward"].get<double>(), chosenSp); }
 		}
 	}
 }
@@ -313,14 +338,12 @@ void agent::getExperimentalOptions(nlohmann::json param,
 		cleanOptionsT1[0].rebirth(resident, 
 			param["residents"][chosenSp]["means"],
 			param["residents"][chosenSp]["sds"],mins,
-			param["residents"][chosenSp]["probs"],
 			param["ResReward"].get<double>(),chosenSp);
 		chosenSp = "Sp";
 		chosenSp.append(itos(visitSpProb.sample()+1));
 		cleanOptionsT1[1].rebirth(visitor, 
 			param["visitors"][chosenSp]["means"],
 			param["visitors"][chosenSp]["sds"],	mins,
-			param["visitors"][chosenSp]["probs"],
 			param["VisReward"].get<double>(),chosenSp);
 		return;
 	}
@@ -347,6 +370,7 @@ void agent::act(client newOptions[], int &idNewOptions,
 	choiceT1 = 2;
 	ObtainReward();
 	getNewOptions(newOptions, idNewOptions, param, visitSpProb, residSpProb);
+	calcResponses();
 	valuesT1 = value();
 	prefT1 = preference();
 	choice();
@@ -369,7 +393,7 @@ void agent::act(client newOptions[], int &idNewOptions,
 	}
 	featWeights[22] += alpha*(reward + gamma*valuesT1[choiceT1] - valuesT[choiceT])*choiceT;	
 }*/
-void agent::updateClient(int &countWeights, int clientId) {
+void agent::update() {
 	// change estimated value according to current reward and 
 	// estimates of future state-action pair
 	double delta = currentReward + negReward*neta + 
@@ -382,24 +406,11 @@ void agent::updateClient(int &countWeights, int clientId) {
 	else {
 		eligVec = (1-p0);
 	}
-	for (int i = 0; i < cleanOptionsT[clientId].numFeat[0] + 
-		cleanOptionsT[clientId].numFeat[1]; i++) {
-		if (i<cleanOptionsT[clientId].numFeat[0]) {
-			featWeightsCrit[countWeights] += alphaCrit*delta*
-				cleanOptionsT[clientId].featQuant[i];
-			featWeightsAct[countWeights] += alphaAct*delta*eligVec*
-				cleanOptionsT[clientId].featQuant[i];
-			++countWeights;
-		}
-		else {
-			featWeightsCrit[countWeights] += 
-				boolExtUpdate*alphaCrit*delta*
-				cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
-			featWeightsAct[countWeights] +=
-				boolExtUpdate*alphaAct*delta*eligVec*
-				cleanOptionsT[clientId].featBool[i - cleanOptionsT[clientId].numFeat[0]];
-			++countWeights;
-		}
+	for (int countFeat = 0; countFeat<nFeat; ++countFeat) {
+		featWeightsCrit[countFeat] += alphaCrit*delta*
+			responsesT[countFeat];
+		featWeightsAct[countFeat] += alphaAct*delta*eligVec*
+			responsesT[countFeat];
 	}
 }
 
@@ -416,14 +427,14 @@ void agent::printIndData(std::ofstream &learnSeries, int &seed) {
 	else { 
 		cleanOptionsT[0].printClientData(learnSeries); 
 	}
-	for (int j = 0; j < numEst; j++) {
-		learnSeries << featWeightsCrit[j] << '\t';
-		//cout << values[j] << '\t';
-	}
-	for (int j = 0; j < numEst; j++) {
-		learnSeries << featWeightsAct[j] << '\t';
-		//cout << values[j] << '\t';
-	}
+	//for (int j = 0; j < nFeat; j++) {
+	//	learnSeries << featWeightsCrit[j] << '\t';
+	//	//cout << values[j] << '\t';
+	//}
+	//for (int j = 0; j < nFeat; j++) {
+	//	learnSeries << featWeightsAct[j] << '\t';
+	//	//cout << values[j] << '\t';
+	//}
 	learnSeries << std::endl;
 	//cout << endl;
 }
@@ -433,107 +444,100 @@ double agent::logist(double diffPref) {
 	return (1 / (1 + exp(-diffPref))); 
 }
 
-double agent::linearComClient(int clientid, int &countFeat, 
-	double featWeights[]) {
-	double temp = 0;
-	for (int i = 0; i < cleanOptionsT1[clientid].numFeat[0] +
-		cleanOptionsT1[clientid].numFeat[1]; i++) {
-		if (i < cleanOptionsT1[clientid].numFeat[0]) {
-			temp += cleanOptionsT1[clientid].featQuant[i] *
-				featWeights[countFeat];
-			++countFeat;
+void agent::calcResponses() {
+	double euclid;
+	for (int countFeat = 0; countFeat < nFeat; ++countFeat) {
+		responsesT[countFeat] = responsesT1[countFeat];
+		euclid = 0;
+		for (int clientid = 0; clientid < 2; ++clientid) {
+			for (int countDim = 0;
+				countDim < cleanOptionsT1[clientid].numFeat; ++countDim) {
+				euclid += pow(cleanOptionsT1[clientid].featQuant[countDim] -
+					centers[countFeat][countDim +
+					clientid*cleanOptionsT1[clientid].numFeat], 2);
+			}
 		}
-		else {
-			temp += cleanOptionsT1[clientid].featBool[i - cleanOptionsT1[clientid].numFeat[0]]
-				* featWeights[countFeat];
-			++countFeat;
-		}
+		responsesT1[countFeat] = exp(-euclid / (2 * sigmaSq));
 	}
-	return(temp);
+}
+
+double agent::RBF(double featWeights[]) {
+	double responseSum = 0;
+	for (int countFeat = 0; countFeat < nFeat; ++countFeat) {
+		
+		responseSum += responsesT1[countFeat]*featWeights[countFeat];
+	}
+	return (responseSum);
 }
 
 class FIATy1																								// Agent that estimates state-action and uses value for every desicion
 	:public agent {
 public:
-	FIATy1(double alphaCritI, double alphaActI, double gammaI, double netaI)
-		:agent(alphaCritI, alphaActI, gammaI, netaI)	{
-			numEst = 22;
-		}
+	FIATy1(double alphaCI = 0.01, double alphaAI = 0.01,
+		double gammaI = 0.5, bool netaI = 0, int numCenterspDimI = 3,
+		double sigmaSqI = 100)
+		:agent(alphaCI, alphaAI, gammaI, netaI, 
+			numCenterspDimI, sigmaSqI) {}
 	virtual void choice() {
 		if (rnd::uniform() < logist(prefT1)) { choiceT1= 0; }
 		else { choiceT1 = 1; }
 	}
-	virtual void updateDerived() {
-		int countWeights = 0;
-		updateClient(countWeights, 0);
-		updateClient(countWeights, 1);
-	}
 	virtual double value() {
-		int countFeat = 0;
-		double client0 = 0;
-		double client1 = 0;
-		client0 = linearComClient(0, countFeat,featWeightsCrit);
-		client1 = linearComClient(1, countFeat,featWeightsCrit);
-		return(client0 + client1);
+		return(RBF(featWeightsCrit));
 	}
 	virtual double preference() {
-		int countFeat = 0;
-		double client0 = 0;
-		double client1 = 0;
-		client0 = linearComClient(0, countFeat, featWeightsAct);
-		client1 = linearComClient(1, countFeat, featWeightsAct);
-		return(client0 + client1);
+		return(RBF(featWeightsCrit));
 	}
 };
 
 
 
-class FIATy2 :public agent {
-	// Agents that estimates state-actions and only uses value to descriminate between clients
-public:
-	FIATy2(double alphaCritI, double alphaActI, double gammaI, double netaI)
-		:agent(alphaCritI, alphaActI, gammaI, netaI) {
-		numEst = 22;
-	}
-	virtual void choice() {
-		if (cleanOptionsT1[0].mytype != absence &&
-			cleanOptionsT1[1].mytype != absence) {
-			// if there are no absences, then use desicion rule
-			if (rnd::uniform() < logist(prefT1)) {
-				choiceT1 = 0;
-			}
-			else { choiceT1 = 1; }
-		}
-		else if (cleanOptionsT1[0].mytype == absence) {
-			// if there is an absence, then chose the other option
-			choiceT1 = 1;
-		}
-		else {
-			choiceT1 = 0;
-		}
-	}
-	virtual void updateDerived() {
-		int countWeights = 0;
-		updateClient(countWeights, 0);
-		updateClient(countWeights, 1);
-	}
-	virtual double value() {
-		int countFeat = 0;
-		double client0 = 0;
-		double client1 = 0;
-		client0 = linearComClient(0, countFeat, featWeightsCrit);
-		client1 = linearComClient(1, countFeat, featWeightsCrit);
-		return(client0 + client1);
-	}
-	virtual double preference() {
-		int countFeat = 0;
-		double client0 = 0;
-		double client1 = 0;
-		client0 = linearComClient(0, countFeat, featWeightsAct);
-		client1 = linearComClient(1, countFeat, featWeightsAct);
-		return(client0 + client1);
-	}
-};
+//class FIATy2 :public agent {
+//	// Agents that estimates state-actions and only uses value to descriminate between clients
+//public:
+//	FIATy2(double alphaCritI, double alphaActI, double gammaI, double netaI)
+//		:agent(alphaCritI, alphaActI, gammaI, netaI) {
+//		numEst = 22;
+//	}
+//	virtual void choice() {
+//		if (cleanOptionsT1[0].mytype != absence &&
+//			cleanOptionsT1[1].mytype != absence) {
+//			// if there are no absences, then use desicion rule
+//			if (rnd::uniform() < logist(prefT1)) {
+//				choiceT1 = 0;
+//			}
+//			else { choiceT1 = 1; }
+//		}
+//		else if (cleanOptionsT1[0].mytype == absence) {
+//			// if there is an absence, then chose the other option
+//			choiceT1 = 1;
+//		}
+//		else {
+//			choiceT1 = 0;
+//		}
+//	}
+//	virtual void updateDerived() {
+//		int countWeights = 0;
+//		updateClient(countWeights, 0);
+//		updateClient(countWeights, 1);
+//	}
+//	virtual double value() {
+//		int countFeat = 0;
+//		double client0 = 0;
+//		double client1 = 0;
+//		client0 = linearComClient(0, countFeat, featWeightsCrit);
+//		client1 = linearComClient(1, countFeat, featWeightsCrit);
+//		return(client0 + client1);
+//	}
+//	virtual double preference() {
+//		int countFeat = 0;
+//		double client0 = 0;
+//		double client1 = 0;
+//		client0 = linearComClient(0, countFeat, featWeightsAct);
+//		client1 = linearComClient(1, countFeat, featWeightsAct);
+//		return(client0 + client1);
+//	}
+//};
 
 
 
