@@ -57,7 +57,7 @@ FIAtimeIntValue<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
   
 # Plot the dynamics of the clients values --------------------------------------------------------------
 
-idRep<-0
+idRep<-1
 
 par(plt=posPlot(),xaxt='s',yaxt='s')
 with(FIAraw[Training==idRep],{

@@ -195,34 +195,34 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
-	//json param;
-	//param["totRounds"] = 1000;
-	//param["ResReward"] = 1;
-	//param["VisReward"] = 1;
-	//param["ResProb"] = 0.2;
-	//param["VisProb"] = 0.2;
-	//param["ResProbLeav"] = 0;
-	//param["VisProbLeav"] = 1;
-	//param["negativeRew"] = -0.5;
-	//param["experiment"] = false;
-	//param["inbr"] = 0;
-	//param["outbr"] = 0;
-	//param["trainingRep"] = 5;
-	//param["alphaCrit"] = 0.001;
-	//param["alphaAct"] = 0.001;
-	//param["printGen"] = 1;
-	//param["seed"] = 1;
-	//param["gammaRange"] = { 0, 0.8 };
-	//param["netaRange"] = { false, true };
-	//param["mins"] = { 10, 10 };
-	//param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
-	//param["visitors"]["Sp1"]["means"] = { 17, 38, 28};
-	//param["visitors"]["Sp1"]["sds"] = { 3, 3, 3};
-	//param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
-	//param["visitors"]["Sp1"]["relAbun"] = 1;
-	//param["residents"]["Sp1"]["means"] = { 28, 31, 27};
-	//param["residents"]["Sp1"]["sds"] = { 3, 3, 3};
-	//param["residents"]["Sp1"]["relAbun"] = 1;
+	/*json param;
+	param["totRounds"] = 1000;
+	param["ResReward"] = 1;
+	param["VisReward"] = 1;
+	param["ResProb"] = 0.2;
+	param["VisProb"] = 0.2;
+	param["ResProbLeav"] = 0;
+	param["VisProbLeav"] = 1;
+	param["negativeRew"] = -0.5;
+	param["experiment"] = false;
+	param["inbr"] = 0;
+	param["outbr"] = 0;
+	param["trainingRep"] = 5;
+	param["alphaCrit"] = 0.001;
+	param["alphaAct"] = 0.001;
+	param["printGen"] = 1;
+	param["seed"] = 1;
+	param["gammaRange"] = { 0, 0.8 };
+	param["netaRange"] = { false, true };
+	param["mins"] = { 10, 10 };
+	param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
+	param["visitors"]["Sp1"]["means"] = { 17, 38, 28};
+	param["visitors"]["Sp1"]["sds"] = { 3, 3, 3};
+	param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
+	param["visitors"]["Sp1"]["relAbun"] = 1;
+	param["residents"]["Sp1"]["means"] = { 28, 31, 27};
+	param["residents"]["Sp1"]["sds"] = { 3, 3, 3};
+	param["residents"]["Sp1"]["relAbun"] = 1;*/
 	
 	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];

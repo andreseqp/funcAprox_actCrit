@@ -18,7 +18,7 @@ fileName<-"parameters.json"
 param<-list(totRounds=1000000,ResReward=1,VisReward=1,ResProb=0.2,VisProb=0.2,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=10,
-            alphaCrit=0.01,alphaAct=0.01,printGen=1,seed=1, 
+            alphaCrit=0.01,alphaAct=0.01,printGen=100,seed=1, 
             gammaRange=c(0,0.8),
             tauRange=c(5,10),netaRange=c(FALSE,TRUE),mins=c(10,10),
             folder=simsDir)

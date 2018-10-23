@@ -464,13 +464,12 @@ void agent::calcResponses() {
 double agent::RBF(double featWeights[]) {
 	double responseSum = 0;
 	for (int countFeat = 0; countFeat < nFeat; ++countFeat) {
-		
 		responseSum += responsesT1[countFeat]*featWeights[countFeat];
 	}
 	return (responseSum);
 }
 
-class FIATy1																								// Agent that estimates state-action and uses value for every desicion
+class FIATy1																		// Agent that estimates state-action and uses value for every desicion
 	:public agent {
 public:
 	FIATy1(double alphaCI = 0.01, double alphaAI = 0.01,

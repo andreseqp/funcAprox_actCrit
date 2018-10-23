@@ -24,7 +24,7 @@ featW<-seq(0.5,4,length=numfeat)
 
 
 plot(totRBF(rangx,rangCent,rangSigSq,featW)~rangx,type='l',col=1,
-     xlab="x",ylab="response",ylim=c(0,5))
+     xlab="x",ylab="response",ylim=c(0,10))
 for(i in 1:numfeat){
   lines(RBF(rangx,rangCent[i],rangSigSq)~rangx,col=i+1)  
 }
