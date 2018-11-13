@@ -12,14 +12,17 @@ enum learPar { alphaCritPar, alphaActPar, gammaPar, netaPar };
 // Global variables
 // Client's characteristics
 extern double mins[2];
-extern double boolExtUpdate = 10;
+extern const int numCenterspDim = 5;
+// number of features per morphological dimension
+extern const int nFeat = 15625;
+// number of features
 
 
 class agent {
 	// Learning agent
 public:
 	agent(double alphaCI, double alphaAI, double gammaI, bool netaI, 
-		int numCenterspDimI, double sigmaSqI);
+		double sigmaSqI);
 	// constructor providing values for the learning parameters
 	virtual ~agent();
 	// destructor not really necessary
@@ -57,9 +60,6 @@ public:
 		rnd::discrete_distribution visitSpProb,
 		rnd::discrete_distribution residSpProb);
 	void agent::calcResponses();
-	int getNfeat() {
-		return(nFeat);
-	}
 	// function to obtain options as in an experimental trial
 	client cleanOptionsT[2];		
 	// current cleaning options time = t
@@ -74,15 +74,15 @@ public:
 	virtual void choice() = 0;
 	//void (agent::*pointGNO)(client newOptions[], int &idNewOptions, double &VisProbLeav, double &ResProbLeav, double &biasRV, double &negReward) = NULL;                // C++
 protected:
-	double featWeightsCrit[729];
+	double featWeightsCrit[nFeat];
 	// vector of weights to fit the state-action value function. 
 	// Each corresponds to one feature of the client
-	double featWeightsAct[729];
+	double featWeightsAct[nFeat];
 	// vector of weights to fit the state-action value function. 
 	// Each corresponds to one feature of the client
-	double centers[729][6];
-	double responsesT[729];
-	double responsesT1[729];
+	double centers[nFeat][6];
+	double responsesT[nFeat];
+	double responsesT1[nFeat];
 	double valuesT;
 	// value estimated for current state
 	double valuesT1;
@@ -102,11 +102,8 @@ protected:
 	int age;
 	double negReward;
 private:
-	int nFeat;
 	double sigmaSq;
 	// degree of generalization
-	int numCenterspDim;
-	// number of features per morphological dimension
 	double alphaCrit;
 	// speed of learning for the critic
 	double alphaAct;
@@ -119,20 +116,18 @@ private:
 // Members of agent class
 
 agent::agent(double alphaCI=0.01, double alphaAI=0.01, 
-	double gammaI=0.5, bool netaI=0, int numCenterspDimI=3, 
+	double gammaI=0.5, bool netaI=0, 
 	double sigmaSqI=100) {
 	// parameterized constructor
 	client noClient = client();
-	numCenterspDim = numCenterspDimI;
-	nFeat = numCenterspDim ^ 6;
-	double interv = 100 / (numCenterspDim+1);
+	double interv = 100 / (numCenterspDim-1);
 	int cfeat = 0;
-	for (int a = 1; a <= numCenterspDim; ++a) {
-		for (int b = 1; b <= numCenterspDim; ++b) {
-			for (int c = 1; c <= numCenterspDim; ++c){
-				for (int d = 1; d <= numCenterspDim; d++){
-					for (int e = 1; e <= numCenterspDim; e++) {
-						for (int f = 1; f <= numCenterspDim; f++) {
+	for (int a = 0; a < numCenterspDim; ++a) {
+		for (int b = 0; b < numCenterspDim; ++b) {
+			for (int c = 0; c < numCenterspDim; ++c){
+				for (int d = 0; d < numCenterspDim; d++){
+					for (int e = 0; e < numCenterspDim; e++) {
+						for (int f = 0; f < numCenterspDim; f++) {
 							featWeightsCrit[cfeat] = 0;
 							featWeightsAct[cfeat] = 0;
 							centers[cfeat][0] = a*interv;
@@ -157,7 +152,6 @@ agent::agent(double alphaCI=0.01, double alphaAI=0.01,
 	prefT = 0, prefT1= 0;
 	currentReward = 0, cumulReward = 0, negReward = 0;
 	age = 0;
-	nFeat = 729;
 }
 
 void agent::rebirth() {
@@ -293,7 +287,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(resident,
 					param["residents"][chosenSp]["means"],
 					param["residents"][chosenSp]["sds"],
-					mins, param["ResReward"].get<double>(),chosenSp);
+					mins, param["residents"][chosenSp]["reward"],chosenSp);
 			}
 			else {
 				std::string chosenSp = "Sp";
@@ -301,7 +295,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(visitor,
 					param["visitors"][chosenSp]["means"],
 					param["visitors"][chosenSp]["sds"],
-					mins, param["VisReward"].get<double>(),chosenSp);
+					mins, param["visitors"][chosenSp]["reward"],chosenSp);
 			}				
 		}
 		else {
@@ -312,7 +306,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(visitor,
 					param["visitors"][chosenSp]["means"],
 					param["visitors"][chosenSp]["sds"], mins, 
-					param["VisReward"].get<double>(),chosenSp);
+					param["visitors"][chosenSp]["reward"],chosenSp);
 			}
 			else { 
 				std::string chosenSp = "Sp";
@@ -320,7 +314,7 @@ void agent::getExternalOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[!filledPos].rebirth(resident,
 					param["residents"][chosenSp]["means"], 
 					param["residents"][chosenSp]["sds"],
-					mins, param["ResReward"].get<double>(), chosenSp); }
+					mins, param["residents"][chosenSp]["reward"], chosenSp); }
 		}
 	}
 }
@@ -338,13 +332,13 @@ void agent::getExperimentalOptions(nlohmann::json param,
 		cleanOptionsT1[0].rebirth(resident, 
 			param["residents"][chosenSp]["means"],
 			param["residents"][chosenSp]["sds"],mins,
-			param["ResReward"].get<double>(),chosenSp);
+			param["residents"][chosenSp]["reward"],chosenSp);
 		chosenSp = "Sp";
 		chosenSp.append(itos(visitSpProb.sample()+1));
 		cleanOptionsT1[1].rebirth(visitor, 
 			param["visitors"][chosenSp]["means"],
 			param["visitors"][chosenSp]["sds"],	mins,
-			param["VisReward"].get<double>(),chosenSp);
+			param["visitors"][chosenSp]["reward"],chosenSp);
 		return;
 	}
 }
@@ -473,10 +467,10 @@ class FIATy1																		// Agent that estimates state-action and uses valu
 	:public agent {
 public:
 	FIATy1(double alphaCI = 0.01, double alphaAI = 0.01,
-		double gammaI = 0.5, bool netaI = 0, int numCenterspDimI = 3,
+		double gammaI = 0.5, bool netaI = 0,
 		double sigmaSqI = 100)
 		:agent(alphaCI, alphaAI, gammaI, netaI, 
-			numCenterspDimI, sigmaSqI) {}
+			sigmaSqI) {}
 	virtual void choice() {
 		if (rnd::uniform() < logist(prefT1)) { choiceT1= 0; }
 		else { choiceT1 = 1; }
@@ -485,7 +479,7 @@ public:
 		return(RBF(featWeightsCrit));
 	}
 	virtual double preference() {
-		return(RBF(featWeightsCrit));
+		return(RBF(featWeightsAct));
 	}
 };
 

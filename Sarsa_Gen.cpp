@@ -91,14 +91,14 @@ void draw(client trainingSet[], json param,
 			chosenSp.append(itos(residSpProb.sample() + 1));
 			trainingSet[i] = client(resident,param["residents"][chosenSp]["means"],
 				param["residents"][chosenSp]["sds"],
-				mins, param["ResReward"].get<double>(),chosenSp);
+				mins, param["residents"][chosenSp]["reward"],chosenSp);
 		}
 		else if (rndNum < cumProbs[1]) { 
 			string chosenSp = "Sp";
 			chosenSp.append(itos(visitSpProb.sample()+1));
 			trainingSet[i] = client(visitor, param["visitors"][chosenSp]["means"],
 				param["visitors"][chosenSp]["sds"],
-				mins, param["ResReward"].get<double>(), chosenSp);
+				mins, param["visitors"][chosenSp]["reward"], chosenSp);
 		}
 		else { 
 			trainingSet[i] = client(); 
@@ -195,34 +195,34 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	if (input.fail()) { cout << "JSON file failed" << endl; }
 	json param = nlohmann::json::parse(input);
 
-	/*json param;
-	param["totRounds"] = 1000;
-	param["ResReward"] = 1;
-	param["VisReward"] = 1;
-	param["ResProb"] = 0.2;
-	param["VisProb"] = 0.2;
-	param["ResProbLeav"] = 0;
-	param["VisProbLeav"] = 1;
-	param["negativeRew"] = -0.5;
-	param["experiment"] = false;
-	param["inbr"] = 0;
-	param["outbr"] = 0;
-	param["trainingRep"] = 5;
-	param["alphaCrit"] = 0.001;
-	param["alphaAct"] = 0.001;
-	param["printGen"] = 1;
-	param["seed"] = 1;
-	param["gammaRange"] = { 0, 0.8 };
-	param["netaRange"] = { false, true };
-	param["mins"] = { 10, 10 };
-	param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
-	param["visitors"]["Sp1"]["means"] = { 17, 38, 28};
-	param["visitors"]["Sp1"]["sds"] = { 3, 3, 3};
-	param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
-	param["visitors"]["Sp1"]["relAbun"] = 1;
-	param["residents"]["Sp1"]["means"] = { 28, 31, 27};
-	param["residents"]["Sp1"]["sds"] = { 3, 3, 3};
-	param["residents"]["Sp1"]["relAbun"] = 1;*/
+	//json param;
+	//param["totRounds"] = 1000;
+	//param["ResProb"] = 0.2;
+	//param["VisProb"] = 0.2;
+	//param["ResProbLeav"] = 0;
+	//param["VisProbLeav"] = 1;
+	//param["negativeRew"] = -0.5;
+	//param["experiment"] = false;
+	//param["inbr"] = 0;
+	//param["outbr"] = 0;
+	//param["trainingRep"] = 1;
+	//param["alphaCrit"] = 0.001;
+	//param["alphaAct"] = 0.001;
+	//param["printGen"] = 100;
+	//param["seed"] = 1;
+	//param["gammaRange"] = { 0, 0.8 };
+	//param["netaRange"] = { false, true };
+	//param["mins"] = { 10, 10 };
+	//param["folder"] = "S:/quinonesa/Simulations/functionAprox/ActCrit/test_/";
+	//param["visitors"]["Sp1"]["means"] = { 70, 70, 70};
+	//param["visitors"]["Sp1"]["sds"] = { 3, 3, 3};
+	//param["visitors"]["Sp1"]["probs"] = { 1, 1, 1 };
+	//param["visitors"]["Sp1"]["relAbun"] = 1;
+	//param["visitors"]["Sp1"]["reward"] = { 1, 0};
+	//param["residents"]["Sp1"]["means"] = { 50, 50, 50};
+	//param["residents"]["Sp1"]["sds"] = { 3, 3, 3};
+	//param["residents"]["Sp1"]["relAbun"] = 1;
+	//param["residents"]["Sp1"]["reward"] = { 1, 0};
 	
 	
 	mins[0] = param["mins"][0], mins[1] = param["mins"][1];
@@ -274,7 +274,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 	delete[] clientSet;
 	
-	//wait_for_return();
+	/*wait_for_return();*/
 
 	return 0;
 }

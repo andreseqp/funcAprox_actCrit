@@ -1,7 +1,7 @@
 # ------------------ Exploration ------------------------ #
 
 # Directories --------------------------------------------------------------
-genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/"
+genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/RBF"
 scriptDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
 
 
@@ -9,7 +9,9 @@ scriptDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(scriptDir,"aesth_par.R",sep=""))
 source(paste(scriptDir,"loadData.R",sep = ""))
+source('D:/quinonesa/Dropbox/R_files/ternaryAEQP.R')
 library('plotrix')
+
 
 
 
@@ -17,26 +19,31 @@ library('plotrix')
 
 setwd(genDir)
 
-(listPar<-c("TestRBF","gamma","neta"))
-(listVal<-c("",0,0))
+(listPar<-c("TestRBF","alphC"))
+(listVal<-c("",0.01))
 
-(listPar<-c("rdNumSP","gamma","neta"))
-(listVal<-c(9,0,0))
-
+(listPar<-rep("LenNumSp",4))
+(listVal<-c(1,2,3,4))
 
 FIAraw<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
                          loadRawData,folder=genDir))
+
+FIAraw[,idcombSps:=ifelse(test = Type_choice,
+                          10*as.numeric(gsub("Sp",Species_choice,
+                                             replacement = "")),
+                          as.numeric(gsub("Sp",Species_choice,replacement = "")))+
+         ifelse(test = Type_discard,
+                10*as.numeric(gsub("Sp",Species_discard,replacement = "")),
+                as.numeric(gsub("Sp",Species_discard,replacement = "")))]
                   
 param<-getParam(genDir,listparam = listPar,values = listVal)
 
 
 
-FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
-                                                             sd = sd(x))))),
-               by=.(Age,AlphaCri,AlphaAct,Gamma,Neta,rdNumSP), 
-               .SDcols=grep("[[:digit:]]",names(FIAraw))]
-
-
+# FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
+#                                                              sd = sd(x))))),
+#                by=.(Age,AlphaCri,AlphaAct,Gamma,Neta,rdNumSP), 
+#                .SDcols=grep("[[:digit:]]",names(FIAraw))]
 # FIAtimeInt<-do.call(
 #   rbind,lapply(
 #     getFilelist(genDir,listPar,listVal)$FIA,
@@ -45,7 +52,7 @@ FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
 rm(FIAtimeInt)
 
 FIAtimeIntValue<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
-                           file2timeInterValue,interV=1001))
+                           file2timeInterValue,interV=5000))
 
 # PIAtimeInt<-do.call(
 #   rbind,lapply(
@@ -57,49 +64,162 @@ FIAtimeIntValue<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
   
 # Plot the dynamics of the clients values --------------------------------------------------------------
 
-idRep<-1
+idRep<-0
+GammaP<-0
+NetaP<-1
+nSp<-
 
-par(plt=posPlot(),xaxt='s',yaxt='s')
-with(FIAraw[Training==idRep],{
+par(plt=posPlot(1,1,1),xaxt='s',yaxt='s')
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&LenNumSp==nSp],{#
   plot(value~Age,type='p',
        xlab='Trials',ylab='Estimated value',pch=20,cex=1,
-       col=coloptions[match(option,unique(option))])#
-legend('topleft',col =coloptions,legend = unique(option),pch =20,
+       col=coloptions[match(option,sort(unique(option)))])#
+legend('topleft',col =coloptions,legend = sort(unique(option)),pch =20,
        ncol = 3,cex = 0.8)
 })
 
-FIAraw[,length(Age)/dim(FIAraw)[1],by=option]
+# par(plt=posPlot(2,1,2),xaxt='s',yaxt='s',new=TRUE)
+# with(FIAraw[(Gamma==GammaP&Neta==NetaP)&LenNumSp==nSp],{
+#   plot(value~Age,type='p',
+#        xlab='Trials',ylab='Estimated value',pch=20,cex=1,
+#        col=coloptions[match(option,sort(unique(option)))])#
+#   legend('topleft',col =coloptions,legend = sort(unique(option)),pch =20,
+#          ncol = 3,cex = 0.8)
+# })
+
+
 
 # Plot the dynamics of the preference --------------------------------------------------------------
 
 par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
-with(FIAraw[Training==idRep&Age<1000],{
-  plot(preference,type='p',
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&LenNumSp==nSp],{#
+  plot(preference~Age,type='p',
        xlab='Trials',pch=20,cex=1,
-       col=coloptions[match(option,unique(option))])
-  legend('topright',col =coloptions,legend = unique(option),pch =20,
+       col=coloptions[match(option,sort(unique(option)))])
+  legend('topright',col =coloptions,legend = sort(unique(option)),pch =20,
          ncol = 3,cex = 0.8)
 })
+
+# par(plt=posPlot(numplotx = 2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
+# with(FIAraw[(Gamma==GammaP&Neta==NetaP)&LenNumSp==nSp],{
+#   plot(preference~Age,type='p',
+#        xlab='Trials',pch=20,cex=1,
+#        col=coloptions[match(option,sort(unique(option)))])
+#   legend('topright',col =coloptions,legend = sort(unique(option)),pch =20,
+#          ncol = 3,cex = 0.8)
+# })
+
 
 par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
-with(FIAraw[Training==idRep],{
-  plot(logist(preference),type='p',
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&LenNumSp==nSp],{#
+  plot(logist(preference)~Age,type='p',
        xlab='Trials',pch=20,cex=1,
-       col=coloptions[match(option,unique(option))])
-  legend('topright',col =coloptions,legend = unique(option),pch =20,
+       col=coloptions[match(option,sort(unique(option)))])
+  legend('topright',col =coloptions,legend = sort(unique(option)),pch =20,
          ncol = 3,cex = 0.8)
+  abline(a=0.5,b=0,col="grey")
+})
+
+# par(plt=posPlot(numplotx = 2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
+# with(FIAraw[(Gamma==GammaP&Neta==NetaP)&NumSp==4],{
+#   plot(logist(preference)~Age,type='p',
+#        xlab='Trials',pch=20,cex=1,
+#        col=coloptions[match(option,sort(unique(option)))])
+#   legend('topright',col =coloptions,legend = sort(unique(option)),pch =20,
+#          ncol = 3,cex = 0.8)
+#   abline(a=0.5,b=0,col="grey")
+# })
+
+# Plot RV preference by species ------------------------------------------------
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&(option=="RV"&LenNumSp==nSp)],{#
+  plot(logist(preference)~Age,type='p',
+       xlab='Trials',pch=20,cex=1,
+       col=coloptions[match(idcombSps,sort(unique(idcombSps)))])
+  legend('topright',col =coloptions,legend = sort(unique(idcombSps)),
+         pch =20,ncol = 3,cex = 0.8)
+  abline(a=0.5,b=0,col="grey")
+})
+
+par(plt=posPlot(numplotx = 2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&(option=="RV"&LenNumSp==nSp-1)],{
+  plot(logist(preference)~Age,type='p',
+       xlab='Trials',pch=20,cex=1,
+       col=coloptions[match(idcombSps,sort(unique(idcombSps)))])
+  legend('topright',col =coloptions,legend = sort(unique(idcombSps)),
+         pch =20,ncol = 3,cex = 0.8)
+  abline(a=0.5,b=0,col="grey")
+})
+
+# Plot RV preference by difference in height -----------------------------------
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&(option=="RV")&LenNumSp==nSp],{#
+  plot(preference~Age,type='p',
+       xlab='Trials',pch=20,cex=1,
+       col=paletteCont(100)[findInterval(Height_choice-Height_discard,
+                      seq(min(Height_choice-Height_discard),
+                          max(Height_choice-Height_discard),
+                          length=100))])
+  color.bar.aeqp(paletteCont(100),min =round(min(Height_choice-Height_discard),2),
+                 max = round(max(Height_choice-Height_discard),2),nticks = 3,
+                 title = "",cex.tit = 2,numplotx = 12,
+                 numploty = 6,idplotx = 1,idploty = 5,locAxis = 4)
+})
+  
+par(plt=posPlot(numplotx = 2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&(option=="RV"&LenNumSp==nSp-1)],{
+  plot(logist(preference)~Age,type='p',
+       xlab='Trials',pch=20,cex=1,
+       col=paletteCont(100)[findInterval(Height_choice-Height_discard,
+                                             seq(min(Height_choice-Height_discard),
+                                                 max(Height_choice-Height_discard),
+                                                 length=100))])
+  legend('topright',col =coloptions,legend = sort(unique(idcombSps)),
+         pch =20,ncol = 3,cex = 0.8)
+  abline(a=0.5,b=0,col="grey")
 })
 
 
-par(plt=posPlot(2,idplotx = 2),xaxt='s',yaxt='s',new=TRUE)
-with(FIAraw[Training==idRep&option=="RV"],{
+par(plt=posPlot(numplotx = 1,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[(Gamma==GammaP&Neta==NetaP)&(option=="V0"&LenNumSp==nSp)],{
+  plot(logist(preference)~Age,type='p',
+       xlab='Trials',pch=20,cex=1,
+       col=coloptions[match(Species_choice,sort(unique(Species_choice)))])
+  legend('topright',col =coloptions,legend = sort(unique(Species_choice)),
+         pch =20,ncol = 3,cex = 0.8)
+  abline(a=0.5,b=0,col="grey")
+})
+
+
+
+
+par(plt=posPlot(1,idplotx = 1),xaxt='s',yaxt='s')
+with(FIAraw[(option=="RV")&(Gamma==GammaP&Neta==NetaP)],{
   plot(Type_choice~Age,type='p',
      xlab='Trials',ylab='Choice',pch=20,cex=1,xaxt='n',
-     col=coloptions[match(option,unique(option))])
+     col=coloptions[match(option,sort(unique(option)))])
   axis(4)
   # legend('topright',col =coloptions,legend = unique(option),pch =20,
   #      ncol = 3,cex = 0.8)
 })
+
+
+
+sum(FIAraw[(option=="RV"&Age>max(Age)*0.8)&(Gamma==GammaP&Neta==NetaP),
+           Type_choice==1])/
+  sum(FIAraw[(option=="RV"&Age>max(Age)*0.8)&(Gamma==GammaP&Neta==NetaP),
+             Type_choice<3])
+
+sum(FIAraw[(option=="R0"&Age>max(Age)*0.9)&(Gamma==GammaP&Neta==NetaP),
+           Type_choice==0])/
+  sum(FIAraw[(option=="R0"&Age>max(Age)*0.9)&(Gamma==GammaP&Neta==NetaP),
+      Type_choice<3])
+
+sum(FIAraw[(option=="V0"&Age>max(Age)*0.9)&(Gamma==GammaP&Neta==NetaP),Type_choice==1])/
+  sum(FIAraw[(option=="V0"&Age>max(Age)*0.9)&(Gamma==GammaP&Neta==NetaP),Type_choice<3])
+
 
 FIAraw[(Training==0&option=="R0")&Type_choice==2,.(choice,Age)]
 

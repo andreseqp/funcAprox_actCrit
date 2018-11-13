@@ -15,23 +15,24 @@ totRBF(rangx,rangCent,rangSigSq)
 
 sum(sapply(rangCent,RBF,rangx,rangSigSq))
 
-numfeat<-3
-rangSigSq<-100
-rangCent<-seq(0,100,length=numfeat+2)[2:(numfeat+1)]
+numfeat<-4
+rangSigSq<-250
+rangCent<-seq(0,100,length=numfeat)[1:(numfeat)]
 rangx<-seq(0,100,length=1000)
-featW<-seq(0.5,4,length=numfeat)
+featW<-c(0.5,2.5,2,1)
+  seq(0.5,4,length=numfeat)
   runif(numfeat,max=1)
 
-
+par(plt=posPlot())
 plot(totRBF(rangx,rangCent,rangSigSq,featW)~rangx,type='l',col=1,
      xlab="x",ylab="response",ylim=c(0,10))
 for(i in 1:numfeat){
   lines(RBF(rangx,rangCent[i],rangSigSq)~rangx,col=i+1)  
 }
 
-featLoc<-matrix(data = NA,nrow = 729,ncol = 6)
+featLoc<-matrix(data = NA,nrow = 4096,ncol = 6)
 
-centers<-c(25,50,75)
+centers<-c(0,25,50,75)
 count<-0
 for(a in centers){
   for(b in centers){

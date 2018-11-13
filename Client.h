@@ -19,8 +19,8 @@ class client
 	public:
 		client();
 		// default constructor constructs an absent client
-		client(client_ty type, std::vector<double> means, std::vector<double> sds,
-			double mins[], double rew, 
+		client(client_ty type, std::vector<double> means, 
+			std::vector<double> sds, double mins[], std::vector<double> rew, 
 			std::string _species);
 		// contructor																													
 		~client();
@@ -29,7 +29,7 @@ class client
 		// prints data from the client into the learning trial
 		void rebirth(client_ty type, std::vector<double> means, 
 			std::vector<double> sds,	double mins[], 
-			double rew, std::string _species);		
+			std::vector<double> rew, std::string _species);		
 		// Function to reset private variables in an individual
 		client_ty mytype;
 		// The type of the client
@@ -66,7 +66,7 @@ client::client()
 }
 
 client::client(client_ty type, std::vector<double> means, std::vector<double> sds,
-	double mins[], double rew, std::string _species) {
+	double mins[], std::vector<double> rew, std::string _species) {
 	/*,double mMainRGB[], double sdMainRGB[], double &pSecCol,
 	double mSecRGB[], double sdSecRGB[], double &pStripes, double &pDots, double minHL[])*/
 	mytype = type;
@@ -91,7 +91,11 @@ client::client(client_ty type, std::vector<double> means, std::vector<double> sd
 		//	//secRed = rnd::normal(mSecRGB[0],sdSecRGB[0]), secGreen = rnd::normal(mSecRGB[1],sdSecRGB[1]), secBlue = rnd::normal(mSecRGB[2], sdSecRGB[2]);	
 		//	//clip_range(secRed, 0, 255), clip_range(secGreen, 0, 255), clip_range(secBlue, 0, 255);
 		//}
-		reward = rew;
+		if (rew[1] > 0) {
+			reward = rnd::normal(rew[0], rew[1]);
+			clip_low(reward, 0);
+		}
+		else reward = rew[0];
 	}
 }
 
@@ -99,7 +103,7 @@ void client::rebirth(client_ty type=absence,
 	std::vector<double> means = std::vector<double>(),
 	std::vector<double> sds = std::vector<double>(), 
 	double mins[]=0,
-	double rew=0, std::string _species="NA") {
+	std::vector<double> rew = { 0,0 }, std::string _species = "NA") {
 	mytype = type;
 	species = _species;
 	if (mytype == absence) {
@@ -117,7 +121,11 @@ void client::rebirth(client_ty type=absence,
 		//	//secRed = rnd::normal(mSecRGB[0],sdSecRGB[0]), secGreen = rnd::normal(mSecRGB[1],sdSecRGB[1]), secBlue = rnd::normal(mSecRGB[2], sdSecRGB[2]);	
 		//	//clip_range(secRed, 0, 255), clip_range(secGreen, 0, 255), clip_range(secBlue, 0, 255);
 		//}
-		reward = rew;
+		if (rew[1] > 0) {
+			reward = rnd::normal(rew[0], rew[1]);
+			clip_low(reward, 0);
+		}
+		else reward = rew[0];
 	}
 }
 

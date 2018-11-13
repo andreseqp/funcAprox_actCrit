@@ -1,7 +1,7 @@
 # --------------------------------- Time intervals -------------------------------------------------#
 
 projDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit//"
-simsDir<-"s:/quinonesa/Simulations/functionAprox/ActCrit/"
+simsDir<-"s:/quinonesa/Simulations/functionAprox/ActCrit/RBF"
 
 # libraries ---------------------------------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
@@ -15,8 +15,8 @@ setwd(simsDir)
 
 # Define data to be loaded 
 
-(listPar<-c(rep("rdNumSP",9)))
-(listVal<-c(1,2,3,4,5,6,7,8,9))
+(listPar<-c("NumSp"))
+(listVal<-c("4"))
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 diffJsons(param[1],param[3])
@@ -24,9 +24,9 @@ diffJsons(param[1],param[3])
 list.files(simsDir)
 
 # Load interval data for FIA from the raw data
-FIAtimeInt<-rbindlist(lapply(
+FIAIntValstats<-rbindlist(lapply(
     grep("Ty1",getFilelist(simsDir,listPar,listVal)$FIA,value = TRUE),
-    file2timeInterValue,interV=501))
+    file2timeInterValue,interV=2000))
 
 
 # Load FIA data from processed file
@@ -52,24 +52,24 @@ FIAtimeInt<-rbindlist(lapply(
 
 extpar<-listPar[1]
 
-FIAIntValstats<-FIAtimeInt[,.(meanVal=mean(value.m),
-                                   upIQRVal=fivenum(value.m)[4],
-                                   lowIQRVal=fivenum(value.m)[2],
-                                   meanPref=mean(preference.m),
-                                   upIQRPref=fivenum(preference.m)[4],
-                                   lowIQRPref=fivenum(preference.m)[2],
-                                   meanVal.sd=mean(value.sd),
-                                   upIQRVal.sd=fivenum(value.sd)[4],
-                                   lowIQRVal.sd=fivenum(value.sd)[2],
-                                   meanPref.sd=mean(preference.sd),
-                                   upIQRPref.sd=fivenum(preference.sd)[4],
-                                   lowIQRPref.sd=fivenum(preference.sd)[2],
-                                   meanChoice=mean(type_choice.m),
-                                   upIQRChoice=fivenum(type_choice.m)[4],
-                                   lowIQRChoice=fivenum(type_choice.m)[2])
-  ,by=.(Interv,Neta,Gamma,option,AlphaCri,
-      AlphaAct,get(extpar))]
-setnames(FIAIntValstats,'get',extpar)
+# FIAIntValstats<-FIAtimeInt[,.(meanVal=mean(value.m),
+#                                    upIQRVal=fivenum(value.m)[4],
+#                                    lowIQRVal=fivenum(value.m)[2],
+#                                    meanPref=mean(preference.m),
+#                                    upIQRPref=fivenum(preference.m)[4],
+#                                    lowIQRPref=fivenum(preference.m)[2],
+#                                    meanVal.sd=mean(value.sd),
+#                                    upIQRVal.sd=fivenum(value.sd)[4],
+#                                    lowIQRVal.sd=fivenum(value.sd)[2],
+#                                    meanPref.sd=mean(preference.sd),
+#                                    upIQRPref.sd=fivenum(preference.sd)[4],
+#                                    lowIQRPref.sd=fivenum(preference.sd)[2],
+#                                    meanChoice=mean(type_choice.m),
+#                                    upIQRChoice=fivenum(type_choice.m)[4],
+#                                    lowIQRChoice=fivenum(type_choice.m)[2])
+#   ,by=.(Interv,Neta,Gamma,option,AlphaCri,
+#       AlphaAct)]#,get(extpar)
+# setnames(FIAIntValstats,'get',extpar)
 
 FIAIntValstats[,posit:=(get(extpar)-2)*0.06]
 
@@ -78,10 +78,10 @@ FIAIntValstats[,posit:=(get(extpar)-2)*0.06]
 idextPar<-1
 
 
-par(plt=posPlot(numplotx = 3,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',
+par(plt=posPlot()+c(-0.05,-0.05,0,0),yaxt='s',
     las=1,xaxt='s')
-with(FIAIntValstats[(get(extpar)==listVal[idextPar]&Neta==0)&Gamma==0],{
-  plotCI(x=Interv,y=meanVal,
+with(FIAIntValstats[Neta==0&Gamma==0.8],{
+  plotCI(x=Interv,y=value.m,
          ui = upIQRVal,li=lowIQRVal,
          pch=16,xlab='',ylab='',
          col=coloptions[match(option,sort(unique(option)))],
@@ -124,6 +124,35 @@ with(FIAIntValstats[(get(extpar)==listVal[idextPar]&Neta==1)&Gamma==0],{
   text(x=par('usr')[1]+0.5*(par('usr')[2]-par('usr')[1]),
        y=par('usr')[3]+0.2*(par('usr')[4]-par('usr')[3]),
        label = "punishment")
+})
+
+
+# Plot value and preference dynamic --------------------------------------------
+
+par(plt=posPlot(2,1,1)+c(-0.05,-0.05,0,0),yaxt='s',
+    las=1,xaxt='s')
+with(FIAIntValstats[Neta==1&Gamma==0],{
+  plotCI(x=Interv,y=value.m,
+         ui = upIQRVal,li=lowIQRVal,
+         pch=16,xlab='',ylab='',
+         col=coloptions[match(option,sort(unique(option)))],
+         # pch=match(get(extpar),unique(get(extpar)))),
+         sfrac=0.002,cex.axis=1.3)
+  legend('bottomright',col =coloptions,legend = sort(unique(option)),pch =20,
+         ncol = 3,cex = 0.8)
+})
+
+par(plt=posPlot(2,1,2)+c(-0.05,-0.05,0,0),yaxt='s',
+    las=1,xaxt='s',new=TRUE)
+with(FIAIntValstats[Neta==0&Gamma==0.8],{
+  plotCI(x=Interv,y=preference.m,
+         ui = upIQRPref,li=lowIQRPref,
+         pch=16,xlab='',ylab='',
+         col=coloptions[match(option,sort(unique(option)))],
+         # pch=match(get(extpar),unique(get(extpar)))),
+         sfrac=0.002,cex.axis=1.3)
+  legend('bottomright',col =coloptions,legend = sort(unique(option)),pch =20,
+         ncol = 3,cex = 0.8)
 })
 
 
@@ -269,14 +298,14 @@ dev.off()
 
 png(paste(projDir,"\\numSp9.png",sep=""),width = 1000,height = 800)
 
-par(plt=posPlot(numplotx = 3,idplotx = 1),yaxt='s',
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',
     las=1,xaxt='s')
 with(FIAIntValstats[(option=="RV"&Neta==0)&Gamma==0],{
-  plotCI(x=Interv+posit,y=meanChoice,
-         ui = upIQRChoice,li=lowIQRChoice,
+  plot(x=Interv+posit,y=type_choice.m,
+         # ui = upIQRChoice,li=lowIQRChoice,sfrac=0.002,
          pch=16,xlab='',ylab='',ylim=c(0.3,1),
          col=colMany[match(get(extpar),unique(get(extpar)))],
-         sfrac=0.002,cex.axis=1.3,yaxt='s')
+         cex.axis=1.3,yaxt='s')
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   # axis(side=4,cex.axis=1.3)
   legend('topleft',col =colMany,
@@ -284,7 +313,7 @@ with(FIAIntValstats[(option=="RV"&Neta==0)&Gamma==0],{
          lwd=1, ncol = 3,cex = 0.8,pch = 20)
   text(x=par('usr')[1]+0.5*(par('usr')[2]-par('usr')[1]),
        y=par('usr')[3]+0.2*(par('usr')[4]-par('usr')[3]),
-       label = "no future - no punishment")
+       label = "")
 })
 
 par(plt=posPlot(numplotx = 3,idplotx = 2),yaxt='s',

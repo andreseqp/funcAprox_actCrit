@@ -45,21 +45,23 @@ pdf(paste(projDir,"\\",extpar,listVal[idextPar],"_.pdf",sep = ""))
 
 # all trait
 
-traits<-grep("choice",names(FIAraw),value=TRUE)[4:11]
+traits<-grep("choice",names(FIAraw),value=TRUE)[4:6]
 
 tmp<-lapply(traits,function(x){strsplit(x,split="_")[[1]][1]})
 
-nrows<-3
-ncols<-3
+nrows<-2
+ncols<-2
 
 
-ylimtemp<-c(0,0.2)
-xlimtemp<-c(0,50)
+ylimtemp<-c(0,0.5)
+xlimtemp<-c(0,100)
 countR<-1
 countC<-0
 i<-0
 par(xaxt='s',yaxt='s')
 plot.new()
+numSP<-2
+nbreaks<-8
 
 for(trait in tmp){
   i<-i+1
@@ -70,21 +72,27 @@ for(trait in tmp){
   #                                            get((paste(trait,"_discard",sep=""))))]),
   #             max(FIAraw[get(extpar)==parH,.(get(paste(trait,"_choice",sep="")),
   #                                            get(paste(trait,"_discard",sep="")))]))
-  hist(c(FIAraw[Type_choice==0&get(extpar)==listVal[idextPar],
-                get(paste(trait,"_choice",sep=""))],
-         FIAraw[Type_discard==0&get(extpar)==listVal[idextPar],
-                get(paste(trait,"_discard",sep=""))]),ylim=ylimtemp,main = "",
-       col = colours[2],freq = FALSE,xlab="",xlim=xlimtemp,ylab="",breaks = 30)
-  hist(c(FIAraw[Type_choice==1&get(extpar)==listVal[idextPar],
-                get(paste(trait,"_choice",sep=""))],
-         FIAraw[Type_discard==1&get(extpar)==listVal[idextPar],
-                get(paste(trait,"_discard",sep=""))]),main = "",xlab="",ylab="",
-       col = colours[1], freq = FALSE,add=TRUE,ylim=ylimtemp,xlim=xlimtemp,
-       breaks = 30)
-  text(x=20,y=0.19,labels = trait)
+  hist(c(0,100),ylim = ylimtemp,xlab="",ylab="",border = "white",main="")
+  for(sp in sort(unique(FIAraw[LenNumSp==numSP,Species_choice]))){
+    hist(c(FIAraw[(Type_choice==0&LenNumSp==numSP)&Species_choice==sp,
+                  get(paste(trait,"_choice",sep=""))],
+           FIAraw[(Type_discard==0&LenNumSp==numSP)&Species_discard==sp,
+                  get(paste(trait,"_discard",sep=""))]),ylim=ylimtemp,main = "",
+         col = colResidents[match(sp,unique(FIAraw[LenNumSp==numSP,
+                                                          Species_choice]))],
+         freq = FALSE,xlab="",xlim=xlimtemp,ylab="",
+         add=TRUE,breaks = nbreaks)
+    hist(c(FIAraw[(Type_choice==1&LenNumSp==numSP)&Species_choice==sp,
+                  get(paste(trait,"_choice",sep=""))],
+           FIAraw[(Type_discard==1&LenNumSp==numSP)&Species_discard==sp,
+                  get(paste(trait,"_discard",sep=""))]),main = "",xlab="",ylab="",
+         col = colVisitors[match(sp,unique(FIAraw[LenNumSp==numSP,
+                                                          Species_choice]))],
+         freq = FALSE,add=TRUE,ylim=ylimtemp,xlim=xlimtemp,breaks = nbreaks)
+  }
+  text(x=20,y=0.49,labels = trait)
   par(yaxt='n');
-  if((i)%%ncols==0)
-  {
+  if((i)%%ncols==0){
     countR<-countR+1
     countC<-0
     par(yaxt='s',xaxt='n')
@@ -92,7 +100,11 @@ for(trait in tmp){
 }
 par(plt=posPlot(numplotx = ncols,numploty = nrows,idplotx = countC+1,
                 idploty = countR),new=TRUE)
-legend("topright",legend = c("visitor","resident"),col = colours,pch = 15)
+hist(c(0,100),ylim = ylimtemp,xlab="",ylab="",border = "white",main="")
+legend("topright",legend = rep(sort(unique(FIAraw[LenNumSp==numSP,Species_choice])),2),
+       col=c(colVisitors[1:numSP],colResidents[1:numSP]),#c("visitor","resident"),col = colours
+       pch = 15,ncol = 2,title="Visitors    Residents")
+
 #  Critic feature weights dyanamics--------------------------------------------------
 
 nrows<-4
@@ -110,6 +122,8 @@ ylimtemp<-c(min(FIAraw[get(extpar)==listVal[idextPar],
                        .SD,.SDcols=grep("_Crit",names(FIAraw),value = TRUE)]),
             max(FIAraw[get(extpar)==listVal[idextPar],
                        .SD,.SDcols=grep("_Crit",names(FIAraw),value = TRUE)]))
+
+
 
 with(FIAagg[get(extpar)==listVal[idextPar]],{
   for(feat in grep("0_Crit.mean",names(FIAagg),value = TRUE)){
@@ -151,7 +165,6 @@ with(FIAagg[get(extpar)==listVal[idextPar]],{
     }
   }
 })
-
 
 
 # Actor feature weights dyanamics ----------------------------------------------

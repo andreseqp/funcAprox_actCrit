@@ -4,6 +4,26 @@ library("data.table")
 library("jsonlite")
 library("rlist")
 
+check_create.dir<-function(folder,param,values){
+  listfolders<-paste(param,values,"_",sep = "")  
+  currFolders<-lapply(listfolders,dir.exists)
+  if(sum(currFolders>0)){
+    warning("At least one of the folders already exists \n Please check",
+            immediate. = TRUE)
+    print(cbind(listfolders,currFolders))
+    ans<-readline("Want to continue?")
+    if(substr(ans, 1, 1) == "y"){
+      lapply(listfolders,dir.create)
+      return(listfolders)
+    }
+    else{
+      return(listfolders)
+    }
+  }else{
+    lapply(listfolders,dir.create)
+    return(listfolders)
+  }
+}
 
 getFilelist<-# reads de list of files and filters it according to a list of parameters
              # and values of interest
@@ -143,11 +163,14 @@ file2timeInterValue<-function(filename,interV,maxAge=-2)
                       (tmp$Type_choice==2 & tmp$Type_discard==1),"V0",tmp$option)
   tmp$option<-ifelse((tmp$Type_choice==2 & tmp$Type_discard==2),"00",tmp$option)
   tmptimeInter<-
-    tmp[,.(value.m=mean(value),value.sd=sd(value),
+    tmp[,.(value.m=mean(value),
+           upIQRVal=fivenum(value)[4],
+           lowIQRVal=fivenum(value)[2],
            preference.m=mean(preference),
-           preference.sd=sd(preference),
-           type_choice.m=mean(Type_choice)),
-      by=.(Interv=floor(Age/interV),Training,
+           type_choice.m=mean(Type_choice),
+           upIQRPref=fivenum(preference)[4],
+           lowIQRPref=fivenum(preference)[2]),
+        by=.(Interv=floor(Age/interV),
            AlphaCri,AlphaAct,Gamma,Neta,option),]
   if(length(extPar)>0){
     tmptimeInter[,eval(extPar):=parVal]
