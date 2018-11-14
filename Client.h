@@ -92,7 +92,7 @@ client::client(client_ty type, std::vector<double> means, std::vector<double> sd
 		//	//clip_range(secRed, 0, 255), clip_range(secGreen, 0, 255), clip_range(secBlue, 0, 255);
 		//}
 		if (rew[1] > 0) {
-			reward = rnd::normal(rew[0], rew[1]);
+			reward = (featQuant[0]*2/100)+rnd::normal(0, rew[1]);
 			clip_low(reward, 0);
 		}
 		else reward = rew[0];
@@ -104,14 +104,14 @@ void client::rebirth(client_ty type=absence,
 	std::vector<double> sds = std::vector<double>(), 
 	double mins[]=0,
 	std::vector<double> rew = { 0,0 }, std::string _species = "NA") {
-	mytype = type;
-	species = _species;
-	if (mytype == absence) {
-		for (size_t i = 0; i < 3; i++) {
-			featQuant[i] = 0;
+		mytype = type;
+		species = _species;
+		if (mytype == absence) {
+			for (size_t i = 0; i < 3; i++) {
+				featQuant[i] = 0;
+			}
 		}
-	}
-	else {
+		else {
 		for (size_t i = 0; i < 3; i++) {
 			featQuant[i] = rnd::normal(means[i], sds[i]);
 			clip_range(featQuant[i], 0, 255); 
@@ -122,7 +122,7 @@ void client::rebirth(client_ty type=absence,
 		//	//clip_range(secRed, 0, 255), clip_range(secGreen, 0, 255), clip_range(secBlue, 0, 255);
 		//}
 		if (rew[1] > 0) {
-			reward = rnd::normal(rew[0], rew[1]);
+			reward = (featQuant[0] * 2 / 100) + rnd::normal(0, rew[1]);
 			clip_low(reward, 0);
 		}
 		else reward = rew[0];

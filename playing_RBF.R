@@ -60,4 +60,18 @@ distM<-dist(rbind(state,featLoc))[1:729]
 distM[1:729]^2
 distM[730:2*729]
 
+sizeVis<-rnorm(1000,66,10)
+sizeRes<-rnorm(1000,33,10)
+
+rewVis<-sizeVis*2/100+rnorm(1000,0,0.1)
+rewRes<-sizeRes*2/100+rnorm(1000,0,0.1)
+
+par(plt=posPlot(1,2,1,2))
+hist(sizeVis,xlim=c(0,100))
+hist(sizeRes,add=TRUE)
+par(plt=posPlot(1,2,1,1),new=TRUE)
+hist(rewVis,xlim=c(0,2),main = "")
+hist(rewRes,add=TRUE)
+
+plot(c(rewVis,rewRes)~c(sizeVis,sizeRes))
 

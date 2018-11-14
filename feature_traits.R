@@ -60,7 +60,7 @@ countC<-0
 i<-0
 par(xaxt='s',yaxt='s')
 plot.new()
-numSP<-2
+numSP<-3
 nbreaks<-8
 
 for(trait in tmp){
@@ -78,16 +78,16 @@ for(trait in tmp){
                   get(paste(trait,"_choice",sep=""))],
            FIAraw[(Type_discard==0&LenNumSp==numSP)&Species_discard==sp,
                   get(paste(trait,"_discard",sep=""))]),ylim=ylimtemp,main = "",
-         col = colResidents[match(sp,unique(FIAraw[LenNumSp==numSP,
-                                                          Species_choice]))],
+         col = colResidents[match(sp,sort(unique(FIAraw[LenNumSp==numSP,
+                                                          Species_choice])))],
          freq = FALSE,xlab="",xlim=xlimtemp,ylab="",
          add=TRUE,breaks = nbreaks)
     hist(c(FIAraw[(Type_choice==1&LenNumSp==numSP)&Species_choice==sp,
                   get(paste(trait,"_choice",sep=""))],
            FIAraw[(Type_discard==1&LenNumSp==numSP)&Species_discard==sp,
                   get(paste(trait,"_discard",sep=""))]),main = "",xlab="",ylab="",
-         col = colVisitors[match(sp,unique(FIAraw[LenNumSp==numSP,
-                                                          Species_choice]))],
+         col = colVisitors[match(sp,sort(unique(FIAraw[LenNumSp==numSP,
+                                                          Species_choice])))],
          freq = FALSE,add=TRUE,ylim=ylimtemp,xlim=xlimtemp,breaks = nbreaks)
   }
   text(x=20,y=0.49,labels = trait)

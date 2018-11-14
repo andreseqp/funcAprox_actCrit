@@ -25,12 +25,12 @@ param<-list(totRounds=1000000,ResProb=0.2,VisProb=0.2,
 
 param$visitors$Sp1$means<-c(66,20,40)
 param$visitors$Sp1$sds<-rep(1,3)
-param$visitors$Sp1$reward<-c(1,0)
+param$visitors$Sp1$reward<-c(1,0.1)
 param$visitors$Sp1$relAbun=1
 param$residents$Sp1$means<-c(33,30,40)
 param$residents$Sp1$sds<-rep(1,3)
 param$residents$Sp1$relAbun=1
-param$residents$Sp1$reward<-c(1,0)
+param$residents$Sp1$reward<-c(1,0.1)
 
 set.seed(2)
 
@@ -43,18 +43,18 @@ rangSp<-c(1,2,3,4)
 rang<-""
 listfolders<-check_create.dir(simsdir,rep("TestRBF",length(rang)),rang)
 
-listfolders<-check_create.dir(simsDir,rep("LenNumSp",length(rangSp)),rangSp)
+listfolders<-check_create.dir(simsDir,rep("LenRewNumSp",length(rangSp)),rangSp)
 
 for (i in 1:4) {
   param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')
   for(newSp in 1:rangSp[i]){
     param$visitors[[newSp]]<-
       list(means=c(66,floor(runif(min = 0,max = 100,n = 2))),
-           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0))
+           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0.1))
     names(param$visitors)[newSp]<-paste("Sp",newSp,sep = "")
     param$residents[[newSp]]<-
       list(means=c(33,floor(runif(min = 0,max = 100,n = 2))),
-           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0))
+           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0.1))
     names(param$residents)[newSp]<-paste("Sp",newSp,sep = "")
   }
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
