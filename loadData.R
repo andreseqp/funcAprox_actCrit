@@ -4,6 +4,25 @@ library("data.table")
 library("jsonlite")
 library("rlist")
 
+check_create.dir<-function(folder,param,values){
+  listfolders<-paste(param,values,"_",sep = "")  
+  currFolders<-lapply(listfolders,dir.exists)
+  if(sum(currFolders>0)){
+    warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
+    print(cbind(listfolders,currFolders))
+    ans<-readline("Want to continue?")
+    if(substr(ans, 1, 1) == "y"){
+      lapply(listfolders,dir.create)
+      return(listfolders)
+    }
+    else{
+      return(listfolders)
+    }
+  }else{
+    lapply(listfolders,dir.create)
+    return(listfolders)
+  }
+}
 
 getFilelist<-# reads de list of files and filters it according to a list of parameters
              # and values of interest

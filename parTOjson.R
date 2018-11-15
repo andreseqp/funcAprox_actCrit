@@ -2,11 +2,13 @@
 
 library("jsonlite")
 
+source(paste(projDir,"\\loadData.R",sep = ""))
+
 projDir<-"D:\\quinonesa\\learning_models_c++\\functAprox_actCrit"
 
-simsDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit"
+simsDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/multRegr"
 
-exedir<-paste(projDir,'/./FunctionAproxSarsa.exe',sep='')
+exedir<-paste(projDir,'/./RBF_funcA.exe',sep='')
 
 fileName<-"parameters.json"
 
@@ -15,64 +17,41 @@ fileName<-"parameters.json"
 
 
 
-param<-list(totRounds=20000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
+param<-list(totRounds=100000,ResProb=0.2,VisProb=0.2,
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,
-            alphaCrit=0.00001,alphaAct=0.00001,printGen=1,seed=1, 
+            alphaCrit=0.00001,alphaAct=0.00001,printGen=100,seed=1, 
             gammaRange=c(0,0.8),
-            tauRange=c(5,10),netaRange=c(0,0.5),mins=c(10,10),
+            netaRange=c(FALSE,TRUE),mins=c(10,10),
             folder=simsDir)
 
-param$visitors$Sp1$means<-c(30,20,40,40,40,40,40,40)
-param$visitors$Sp1$sds<-rep(1,8)
-param$visitors$Sp1$probs<-rep(1,3)
+param$visitors$Sp1$means<-c(66,20,40)
+param$visitors$Sp1$sds<-rep(1,3)
+param$visitors$Sp1$reward<-c(1,0.1)
 param$visitors$Sp1$relAbun=1
-param$residents$Sp1$means<-c(20,30,40,40,40,40,40,40)
-param$residents$Sp1$sds<-rep(1,8)
-param$residents$Sp1$probs<-c(1,1,1)
+param$residents$Sp1$means<-c(33,30,40)
+param$residents$Sp1$sds<-rep(1,3)
 param$residents$Sp1$relAbun=1
+param$residents$Sp1$reward<-c(1,0.1)
 
 set.seed(2)
 
 
 setwd(simsDir)
 
+rangSp<-c(1,2,3,4)
+listfolders<-check_create.dir(simsdir,rep("LenRewNumSp",length(rangSp)),rangSp)
 
-check_create.dir<-function(folder,param,values){
-  listfolders<-paste(param,values,"_",sep = "")  
-  currFolders<-lapply(listfolders,dir.exists)
-  if(sum(currFolders>0)){
-    warning("At least one of the folders already exists \n Please check",immediate. = TRUE)
-    print(cbind(listfolders,currFolders))
-    ans<-readline("Want to continue?")
-    if(substr(ans, 1, 1) == "y"){
-      lapply(listfolders,dir.create)
-      return(listfolders)
-    }
-    else{
-      return(listfolders)
-    }
-  }else{
-    lapply(listfolders,dir.create)
-    return(listfolders)
-  }
-}
-
-rang<-c(1,2,3,4,5,6,7,8,9)
-listfolders<-check_create.dir(simsdir,rep("rdNumSP",length(rang)),rang)
-
-for (i in 1:1) {
+for (i in 1:4) {
   param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')
-  for(newSp in 1:rang[i]){
+  for(newSp in 1:rangSp[i]){
     param$visitors[[newSp]]<-
-      list(means=c(floor(runif(min = 10,max = 50,n = 2)),
-                   floor(runif(min = 0,max = 50,n = 6))),
-           sds=rep(1,8),probs=rep(1,3),relAbun=1)
+      list(means=c(66,floor(runif(min = 0,max = 100,n = 2))),
+           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0.1))
     names(param$visitors)[newSp]<-paste("Sp",newSp,sep = "")
     param$residents[[newSp]]<-
-      list(means=c(floor(runif(min = 10,max = 50,n = 2)),
-                   floor(runif(min = 0,max = 50,n = 6))),
-           sds=rep(1,8),probs=rep(1,3),relAbun=1)
+      list(means=c(33,floor(runif(min = 0,max = 100,n = 2))),
+           sds=c(10,rep(1,2)),relAbun=1,reward=c(1,0.1))
     names(param$residents)[newSp]<-paste("Sp",newSp,sep = "")
   }
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
@@ -96,9 +75,9 @@ for (i in 1:1) {
   {
     write(outParam,paste(simsDir,listfolders[i],fileName,sep="\\"))
   }
-  # system(paste(exedir,
-  #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
-  #   ,sep = " "))
+  system(paste(exedir,
+    gsub("\\","/",paste(simsDir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
+    ,sep = " "))
 }
 gsub(pattern = "\\",replacement = "/",simsdir,fixed=TRUE)
 
