@@ -1,9 +1,9 @@
 ##### Feature weights ### ------------------------------------------------------
 
 # Directories --------------------------------------------------------------
-genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/"
+genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/multRegr/"
 scriptDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
-
+plotsdir<-"D:/quinonesa/Dropbox/Neuchatel/Results/functAprox/multLinReg/"
 
 # libraries ----------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
@@ -14,8 +14,8 @@ source(paste(scriptDir,"loadData.R",sep = ""))
 
 setwd(genDir)
 
-(listPar<-c(rep("rdNumSP",7),"gamma","neta"))
-(listVal<-c(1,2,3,4,5,6,7,0.8,0))
+(listPar<-c(rep("LenRewNumSp",4)))
+(listVal<-c(1,2,3,4))
 
 
 FIAraw<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
@@ -111,9 +111,12 @@ countR<-1
 countC<-0
 i<-0
 par(xaxt='s',yaxt='s')
-plot.new()
-numSP<-3
+
+numSP<-1
 nbreaks<-8
+png(paste(plotsdir,listPar[1],numSP,"dist.png",sep=""),
+    width = 1000,height = 1000)
+plot.new()
 
 for(trait in tmp){
   i<-i+1
@@ -156,7 +159,7 @@ for(trait in tmp){
 legend("topright",legend = rep(sort(unique(FIAraw[LenRewNumSp==numSP,Species_choice])),2),
        col=c(colVisitors[1:numSP],colResidents[1:numSP]),#c("visitor","resident"),col = colours
        pch = 15,ncol = 2,title="Visitors    Residents")
-
+dev.off()
 #  Critic feature weights dyanamics--------------------------------------------------
 
 nrows<-4
