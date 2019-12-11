@@ -4,7 +4,7 @@
 #include "Client.h"
 
 #include <fstream>
-#include "D:\\quinonesa\\Dropbox\C++\\json.hpp"  
+#include "C:\\Users\\a.quinones\\Dropbox\C++\\json.hpp"  
 
 
 enum learPar { alphaCritPar, alphaActPar, gammaPar, netaPar };

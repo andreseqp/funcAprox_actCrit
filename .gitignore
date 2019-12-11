@@ -6,6 +6,9 @@ funcAprox_actCrit.exe
 funcAprox_actCrit.iobj
 funcAprox_actCrit.ipdb
 funcAprox_actCrit.pdb
+.vs/
+FuncAproxAC.sln
+FuncAproxAC/
 ./outb0.1_/FIA.timeInt.1001.txt
 ./outb0.2_/FIA.timeInt.1001.txt
 ./outb0_/FIA.timeInt.1001.txt
