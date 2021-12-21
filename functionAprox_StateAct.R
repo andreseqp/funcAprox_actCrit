@@ -1,4 +1,4 @@
-# Load external functions and pachages -------------------------------------------------------
+# Load external functions and packages -------------------------------------------------------
 
 # Laptop
 # source('E:/Dropbox/R_files/posPlots.R')
