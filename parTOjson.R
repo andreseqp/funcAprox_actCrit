@@ -2,11 +2,11 @@
 
 library("jsonlite")
 
-source(paste(projDir,"\\loadData.R",sep = ""))
+source("loadData.R")
 
 projDir<-"D:\\quinonesa\\learning_models_c++\\functAprox_actCrit"
 
-simsDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/multRegr"
+simsDir<-"Simulations"
 
 exedir<-paste(projDir,'/./RBF_funcA.exe',sep='')
 

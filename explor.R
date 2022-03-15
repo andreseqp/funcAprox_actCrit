@@ -1,32 +1,34 @@
 # ------------------ Exploration ------------------------ #
 
 # Directories --------------------------------------------------------------
-genDir<-"S:/quinonesa/Simulations/functionAprox/ActCrit/multRegr"
+genDir<-"multRegr"
 scriptDir<-"d:/quinonesa/learning_models_c++/functAprox_actCrit/"
 plotsdir<-"D:/quinonesa/Dropbox/Neuchatel/Results/functAprox/multLinReg/"
 
 
 # libraries ----------------------------------------------------------------
-source('d:/quinonesa/Dropbox/R_files/posPlots.R')
-source(paste(scriptDir,"aesth_par.R",sep=""))
-source(paste(scriptDir,"loadData.R",sep = ""))
-source('D:/quinonesa/Dropbox/R_files/ternaryAEQP.R')
+library(here)
+source('../R_files/posPlots.R')
+source("aesth_par.R")
+source("loadData.R")
+source('../R_files/ternaryAEQP.R')
 library('plotrix')
 library('lme4')
 
 
 # Load data ------------------------------------------------------------
 
-setwd(genDir)
 
 (listPar<-c(rep("LenRewNumSp",4)))
 (listVal<-c(1,2,3,4))
 
 
-FIAraw<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
-                         loadRawData,folder=genDir))
+FIAraw<-rbindlist(lapply(getFilelist(
+  here("Simulations",genDir),listPar,listVal)$FIA,
+                         loadRawData,folder=here("Simulations",genDir)))
                   
-param<-getParam(genDir,listparam = listPar,values = listVal)
+param<-getParam(here("Simulations",genDir),
+                listparam = listPar,values = listVal)
 
 FIAraw[,idcombSps:=ifelse(test = Type_choice,
                           10*as.numeric(gsub("Sp",Species_choice,
@@ -64,8 +66,8 @@ FIAtimeIntValue<-rbindlist(lapply(getFilelist(genDir,listPar,listVal)$FIA,
 
 idRep<-0
 GammaP<-0.8
-NetaP<-1
-label<-"punishFutur"
+NetaP<-0
+label<-"Futur"
   
 # Plot the dynamics of the clients values --------------------------------------------------------------
 png(paste(plotsdir,listPar[1],"value_",label,".png",sep=""),
@@ -293,7 +295,7 @@ names(tmp)
 
 npx<-3
 
-par(plt=posPlot(numplotx = npx,idplotx = 1)-c(0.05,0.05,0,0))
+par(plt=posPlot(numplotx = npx,idplotx = 1)-c(0.05,0.05,0,0),new=FALSE)
 plot(Type_choice~length.diff,data=tmp)
 lines(x = rep(0,2),y=c(0,1),col='grey')
 
